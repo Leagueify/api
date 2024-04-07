@@ -1,0 +1,25 @@
+name: Pull Request Workflow
+
+on:
+  pull_request:
+
+jobs:
+  check-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.0"
+      - name: Install Dependencies
+        run: make init
+      - name: Check Go Formatting
+        run: if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then exit 1; fi
+      - name: Vet Code 
+        run: make vet
+
+  automated-tests:
+    needs: check-formatting
+    uses: ./github/workflows/tests.yml

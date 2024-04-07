@@ -1,0 +1,124 @@
+version: "3.9"
+
+services:
+  # Production Services
+  traefik:
+    profiles: ['prod']
+    image: traefik:v2.11.0
+    command:
+      - --api.insecure=true
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:8888
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.myresolver.acme.tlschallenge=true
+      - --certificatesresolvers.myresolver.acme.email=mdubois@bytement.com
+      - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.localhost`)
+      - traefik.http.routers.traefik.entrypoints=websecure
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.tls.certresolver=myresolver
+    ports:
+      - 80:8880
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    restart: always
+
+  leagueify:
+    profiles: ['prod']
+    image: ghcr.io/michaelcdubois/leagueify-api:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.leagueify.rule=Host(`server.localhost`)
+      - traefik.http.routers.leagueify.entrypoints=websecure
+      - traefik.http.routers.leagueify.tls=true
+      - traefik.http.routers.leagueify.tls.certresolver=myresolver
+      - traefik.http.middlewares.leagueify.ratelimit.average=100
+    environment:
+      DATABASE_USER: leagueify-user
+      DATABASE_PASS: leagueify-pass
+      DATABASE_NAME: leagueify
+      PORT: 8880
+    expose:
+      - 8880
+    restart: always
+
+  database:
+    profiles: ['prod']
+    container_name: database
+    image: postgres:16.2-alpine3.19
+    environment:
+      POSTGRES_USER: obeedog-user
+      POSTGRES_PASSWORD: obeedog-pass
+      POSTGRES_DB: obeedog
+    expose:
+      - 5432
+    volumes:
+      - database:/data/db
+    restart: always
+
+  # Local Dev Services
+  traefik-dev:
+    profiles: ['dev']
+    image: traefik:v2.11.0
+    command:
+      - --api.insecure=true
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:8888
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.localhost`)
+      - traefik.http.routers.traefik.entrypoints=web
+      - traefik.http.routers.traefik.service=api@internal
+    ports:
+      - 80:8888
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
+
+  leagueify-dev:
+    profiles: ['dev']
+    image: leagueify-api-dev
+    command: "air"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.leagueify-dev.rule=Host(`server.localhost`)
+      - traefik.http.routers.leagueify-dev.entrypoints=web
+      - traefik.http.middlewares.leagueify-dev.ratelimit.average=100
+    environment:
+      DATABASE_USER: leagueify-user
+      DATABASE_PASS: leagueify-pass
+      DATABASE_NAME: leagueify
+      PORT: 8888
+    expose:
+      - 8888
+    volumes:
+      - ./:/app
+    restart: always
+
+  database-dev:
+    profiles: ['dev']
+    container_name: database
+    image: postgres:16.2-alpine3.19
+    environment:
+      POSTGRES_USER: leagueify-user
+      POSTGRES_PASSWORD: leagueify-pass
+      POSTGRES_DB: leagueify
+    ports:
+      - 5432:5432
+    volumes:
+      - database:/data/db
+    restart: always
+
+volumes:
+  database:
