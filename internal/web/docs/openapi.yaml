@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  version: 0.0.1
+  title: Leagueify API
+  summary: Open Source Sporting League Platform.
+  description: Host your own sports league using Leagueify, the all-in-one league hosting platform.
+  license:
+    name: MIT
+    url: https://raw.githubusercontent.com/Leagueify/api/main/LICENSE
+  contact:
+    name: Leagueify Support
+    url: https://github.com/Leagueify/api/issues
+
+servers:
+  - url: http://server.localhost/api
+    description: Local Development Server - Docker
+  - url: http://localhost:8000/api
+    description: Local Development Server - Standalone Executable
+
+paths:
