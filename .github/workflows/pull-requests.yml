@@ -22,4 +22,4 @@ jobs:
 
   automated-tests:
     needs: check-formatting
-    uses: ./github/workflows/tests.yml
+    uses: ./.github/workflows/tests.yml
