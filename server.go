@@ -9,9 +9,9 @@ import (
 
 var (
 	//go:embed all:internal/web
-	web       embed.FS
+	web        embed.FS
 	webAssetFS = echo.MustSubFS(web, "internal/web/assets")
-	webDocsFS = echo.MustSubFS(web, "internal/web/docs")
+	webDocsFS  = echo.MustSubFS(web, "internal/web/docs")
 )
 
 func main() {
