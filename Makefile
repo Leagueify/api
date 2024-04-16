@@ -1,3 +1,6 @@
+clean:
+	go mod tidy
+
 dev-build:
 	docker build --target dev -t leagueify-api-dev .
 
@@ -6,6 +9,9 @@ dev-clean: dev-stop
 
 dev-start: dev-build
 	docker compose --profile dev up
+
+dev-start-detached: dev-build
+	docker compose --profile dev up -d
 
 dev-stop:
 	docker compose --profile dev down -v
@@ -23,7 +29,7 @@ prod-clean: prod-stop
 	docker image rm leagueify-api
 
 prod-start: prod-build
-	docker compose --profile prod up
+	docker compose --profile prod up -d
 
 prod-stop:
 	docker compose --profile prod down -v
