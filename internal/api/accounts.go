@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
@@ -32,6 +33,25 @@ func (api *API) createAccount(c echo.Context) (err error) {
 			map[string]string{
 				"status": "bad request",
 				"detail": util.HandleError(err),
+			},
+		)
+	}
+	// Calculate Age
+	today := time.Now().Format(time.DateOnly)
+	age, err := util.CalculateAge(account.DateOfBirth, today)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": err.Error(),
+			},
+		)
+	}
+	if age < 18 {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": "must be 18 or older to create an account",
 			},
 		)
 	}

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-playground/validator/v10"
@@ -151,7 +152,21 @@ func TestCreateAccount(t *testing.T) {
 			ExpectedStatusCode: http.StatusBadRequest,
 			ExpectedContent:    `"detail":"phone must use the E.164 international standard"`,
 		},
-		// Require 18 year old to create an account
+		{
+			Description: "Exactly 18 Account Creator",
+			RequestBody: fmt.Sprintf(`{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Testu123!","dateOfBirth":"%v","phone":"+12085550000"}`, time.Now().AddDate(-18, 0, 0).Format(time.DateOnly)),
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("INSERT INTO accounts (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusCreated,
+			ExpectedContent:    `"status":"successful"`,
+		},
+		{
+			Description:        "Underage Account Creator",
+			RequestBody:        fmt.Sprintf(`{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Testu123!","dateOfBirth":"%v","phone":"+12085550000"}`, time.Now().AddDate(-18, 0, 1).Format(time.DateOnly)),
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"must be 18 or older to create an account"`,
+		},
 	}
 	// Execute Test Cases
 	for _, test := range testCases {
