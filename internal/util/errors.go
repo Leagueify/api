@@ -34,6 +34,9 @@ func validationErrors(validationErrors validator.ValidationErrors) string {
 		if err.Tag() == "required" {
 			missingFields = append(missingFields, err.Field())
 		}
+		if err.Tag() == "e164" {
+			return "phone must use the E.164 international standard"
+		}
 		if err.Tag() == "email" {
 			return "invalid email"
 		}

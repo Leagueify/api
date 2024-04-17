@@ -137,13 +137,19 @@ func TestCreateAccount(t *testing.T) {
 			ExpectedContent: `"detail":"email already in use"`,
 		},
 		{
-			Description: "Duplicate Phone Address",
+			Description: "Duplicate Phone",
 			RequestBody: `{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Test123!","dateOfBirth":"1990-08-31","phone":"+12085550000"}`,
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectExec("^INSERT INTO accounts (.+) VALUES (.+)$").WillReturnError(&pq.Error{Code: "23505", Constraint: "accounts_phone_key"})
 			},
 			ExpectedStatusCode: http.StatusBadRequest,
-			ExpectedContent: `"detail":"phone already in use"`,
+			ExpectedContent:    `"detail":"phone already in use"`,
+		},
+		{
+			Description:        "Invalid Phone Format",
+			RequestBody:        `{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Test123!","dateOfBirth":"1990-08-31","phone":"(208) 555-0000"}`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"phone must use the E.164 international standard"`,
 		},
 		// Require 18 year old to create an account
 	}
