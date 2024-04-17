@@ -11,7 +11,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	// "github.com/lib/pq"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +36,6 @@ func TestCreateAccount(t *testing.T) {
 				mock.ExpectExec("INSERT INTO accounts (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			ExpectedStatusCode: http.StatusCreated,
-			ExpectedContent:    `"token":".+\..+\..+"`,
 		},
 		{
 			Description:        "Invalid JSON Payload",
@@ -128,6 +127,25 @@ func TestCreateAccount(t *testing.T) {
 			ExpectedStatusCode: http.StatusBadRequest,
 			ExpectedContent:    `"detail":"invalid email"`,
 		},
+		{
+			Description: "Duplicate Email Address",
+			RequestBody: `{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Test123!","dateOfBirth":"1990-08-31","phone":"+12085550000"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("^INSERT INTO accounts (.+) VALUES (.+)$").WillReturnError(&pq.Error{Code: "23505", Constraint: "accounts_email_key"})
+			},
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent: `"detail":"email already in use"`,
+		},
+		{
+			Description: "Duplicate Phone Address",
+			RequestBody: `{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Test123!","dateOfBirth":"1990-08-31","phone":"+12085550000"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("^INSERT INTO accounts (.+) VALUES (.+)$").WillReturnError(&pq.Error{Code: "23505", Constraint: "accounts_phone_key"})
+			},
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent: `"detail":"phone already in use"`,
+		},
+		// Require 18 year old to create an account
 	}
 	// Execute Test Cases
 	for _, test := range testCases {
@@ -146,6 +164,77 @@ func TestCreateAccount(t *testing.T) {
 		c := e.NewContext(req, rec)
 		// Perform Request
 		if assert.NoError(t, api.createAccount(c)) {
+			// Assert Status Code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+			// Validate Response Body
+			match, err := regexp.MatchString(test.ExpectedContent, rec.Body.String())
+			assert.NoError(t, err)
+			assert.True(t, match, fmt.Sprintf("%v: Expected %v but received %v",
+				test.Description, test.ExpectedContent, rec.Body.String(),
+			))
+		}
+		// Assert All Expectations Met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}
+
+func TestVerifyAccount(t *testing.T) {
+	// Create Mock DB
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("ERROR: '%s' was not expected when creating mock DB", err)
+	}
+	defer db.Close()
+	testCases := []struct {
+		Description        string
+		ID                 string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+		ExpectedContent    string
+	}{
+		{
+			Description: "Valid Account ID",
+			ID:          "ERCXNX57",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("^UPDATE accounts SET is_active = true, token = (.+) WHERE id = (.+) AND is_active = false$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+			ExpectedContent:    `"token":"(.+)\.(.+)\.(.+)"`,
+		},
+		{
+			Description:        "Invalid Account ID",
+			ID:                 "12345678",
+			ExpectedStatusCode: http.StatusUnauthorized,
+			ExpectedContent:    `"status":"unauthorized"`,
+		},
+		{
+			Description: "Account ID not in Database",
+			ID:          "ERCXNX57",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("UPDATE accounts SET is_active = true, token = (.+) WHERE id = (.+) AND is_active = false$").WillReturnResult(sqlmock.NewResult(0, 0))
+			},
+			ExpectedStatusCode: http.StatusUnauthorized,
+			ExpectedContent: `"status":"unauthorized"`,
+		},
+	}
+	// Execute Test Cases
+	for _, test := range testCases {
+		// Determine if tests should have mock DB
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// Initialize Echo and the Echo validator
+		e := echo.New()
+		e.Validator = &API{Validator: validator.New()}
+		api := API{DB: db}
+		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/accounts/%s/verify", test.ID), bytes.NewBuffer(nil))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetParamNames("id")
+		c.SetParamValues(test.ID)
+		// Perform Request
+		if assert.NoError(t, api.verifyAccount(c)) {
 			// Assert Status Code
 			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
 			// Validate Response Body

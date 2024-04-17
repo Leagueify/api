@@ -8,16 +8,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var (
-	cfg config.Configuration
-)
-
 func init() {
 	initAccounts()
 }
 
 func Connect() (*sql.DB, error) {
-	cfg.LoadFromEnv()
+	cfg := config.LoadConfig()
 	db, err := sql.Open("postgres", cfg.DBConnStr)
 	if err != nil {
 		return nil, err
@@ -41,7 +37,9 @@ func initAccounts() {
 			phone TEXT NOT NULL UNIQUE,
 			date_of_birth TEXT NOT NULL,
 			coach BOOLEAN DEFAULT false,
-			volunteer BOOLEAN DEFAULT false
+			volunteer BOOLEAN DEFAULT false,
+			token TEXT,
+			is_active BOOLEAN DEFAULT false
 		)
 	`)
 	if err != nil {

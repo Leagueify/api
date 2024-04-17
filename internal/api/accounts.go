@@ -11,6 +11,7 @@ import (
 
 func (api *API) Accounts(e *echo.Group) {
 	e.POST("/accounts", api.createAccount)
+	e.POST("/accounts/:id/verify", api.verifyAccount)
 }
 
 func (api *API) createAccount(c echo.Context) (err error) {
@@ -68,8 +69,45 @@ func (api *API) createAccount(c echo.Context) (err error) {
 			},
 		)
 	}
-	// Create JWT Token
-	accountToken, err := util.GenerateJWT(account.ID)
+	// Successful Account Creation
+	return c.JSON(http.StatusCreated,
+		map[string]string{
+			"status": "successful",
+		},
+	)
+}
+
+func (api *API) verifyAccount(c echo.Context) (err error) {
+	accountID := c.Param("id")
+	// Verify Account ID
+	if !util.VerifyToken(accountID) {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	// Update Account
+	accountToken := util.SignedToken(10)
+	result, err := api.DB.Exec(`
+		UPDATE accounts SET is_active = true, token = $1 WHERE id = $2 AND is_active = false
+	`, accountToken, accountID[:len(accountID)-1])
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	if rows, err := result.RowsAffected(); err != nil || rows != 1 {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	// Generate JWT
+	accountJWT, err := util.GenerateJWT(accountID, accountToken)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest,
 			map[string]string{
@@ -78,11 +116,11 @@ func (api *API) createAccount(c echo.Context) (err error) {
 			},
 		)
 	}
-	// Successful Account Creation
-	return c.JSON(http.StatusCreated,
+	// Return JWT
+	return c.JSON(http.StatusOK,
 		map[string]string{
 			"status": "successful",
-			"token":  accountToken,
+			"token":  accountJWT,
 		},
 	)
 }

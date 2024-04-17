@@ -2,8 +2,11 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
+	"github.com/Leagueify/api/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -13,12 +16,18 @@ func ComparePasswords(providedPassword, storedPassword string) bool {
 	return err == nil
 }
 
-func GenerateJWT(accountID string) (string, error) {
-	key := "JWT"
+func GenerateJWT(accountID, accountToken string) (string, error) {
+	cfg := config.LoadConfig()
+	jwtIssueTime := time.Now()
+	jwtKey := fmt.Sprintf("%s.%s", accountToken, cfg.JWTSecret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
 		"acc": accountID,
+		"exp": jwt.NewNumericDate(jwtIssueTime.Add(time.Hour * 24 * 7)),
+		"iat": jwt.NewNumericDate(jwtIssueTime),
+		"jti": accountToken,
+		"nbf": jwt.NewNumericDate(jwtIssueTime),
 	})
-	signedToken, err := token.SignedString([]byte(key))
+	signedToken, err := token.SignedString([]byte(jwtKey))
 	if err != nil {
 		return "", err
 	}

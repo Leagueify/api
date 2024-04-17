@@ -21,8 +21,7 @@ var (
 
 func main() {
 	// Configuration
-	cfg := config.Configuration{}
-	cfg.LoadFromEnv()
+	cfg := config.LoadConfig()
 	// Echo Initialization
 	e := echo.New()
 	// Middleware Config
