@@ -134,7 +134,7 @@ func TestCreateAccount(t *testing.T) {
 				mock.ExpectExec("^INSERT INTO accounts (.+) VALUES (.+)$").WillReturnError(&pq.Error{Code: "23505", Constraint: "accounts_email_key"})
 			},
 			ExpectedStatusCode: http.StatusBadRequest,
-			ExpectedContent: `"detail":"email already in use"`,
+			ExpectedContent:    `"detail":"email already in use"`,
 		},
 		{
 			Description: "Duplicate Phone",
@@ -220,7 +220,7 @@ func TestVerifyAccount(t *testing.T) {
 				mock.ExpectExec("UPDATE accounts SET is_active = true, token = (.+) WHERE id = (.+) AND is_active = false$").WillReturnResult(sqlmock.NewResult(0, 0))
 			},
 			ExpectedStatusCode: http.StatusUnauthorized,
-			ExpectedContent: `"status":"unauthorized"`,
+			ExpectedContent:    `"status":"unauthorized"`,
 		},
 	}
 	// Execute Test Cases
