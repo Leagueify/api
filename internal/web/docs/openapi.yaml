@@ -32,21 +32,36 @@ paths:
                 firstName:
                   description: User's first name
                   type: string
+                  minLength: 3
+                  maxLength: 32
                 lastName:
                   description: User's last name
                   type: string
+                  minLength: 3
+                  MaxLength: 32
                 email:
                   description: Email associated to the account
                   type: string
                 password:
-                  description: Unhashed user password for the account
+                  description: Raw user password for the account
                   type: string
+                  minLength: 8
                 dateOfBirth:
                   description: User's date of birth
                   type: string
+                  example: "YYYY-MM-DD"
                 phone:
                   description: User's phone number
                   type: string
+                  example: "+12085550000"
+                coach:
+                  description: User's preference to coach
+                  type: boolean
+                  default: false
+                volunteer:
+                  description: User's preference to volunteer
+                  type: boolean
+                  default: false
               required:
                 - firstName
                 - lastName
@@ -58,12 +73,14 @@ paths:
               valid payload:
                 summary: Valid account creation payload
                 value: {
-                  "firstName": "John",
-                  "lastName": "Doe",
+                  "firstName": "Leagueify",
+                  "lastName": "User",
                   "email": "test@leagueify.org",
-                  "password": "Testu123!",
-                  "dateOfBirth": "1999-12-31",
-                  "phone": "(208) 219-0174"
+                  "password": "Test123!",
+                  "dateOfBirth": "1990-08-31",
+                  "phone": "+120855501234",
+                  "coach": true,
+                  "volunteer": false
                 }
       responses:
         '201':
@@ -73,14 +90,14 @@ paths:
               schema:
                 type: object
                 properties:
-                  token:
-                    description: User JWT auth token for API requests
+                  status:
+                    description: Account Successfully Created
                     type: string
               examples:
-                jwtResponse:
-                  summary: Reponse containing JWT auth token
+                accountCreationResponse:
+                  summary: Account Successfully Created
                   value: {
-                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibmdndXAiLCJpYXQiOjE1MTYyMzkwMjJ9.Xo1SeBJ2ZogqroCLdp0-3-r5csOtW7l1e38wwb9EUCY"
+                    "status": "successful"
                     }
         '400':
           description: Error Creating Account
@@ -91,6 +108,57 @@ paths:
               examples:
                 ErrorGeneral:
                   $ref: '#/components/examples/ErrorGeneral'
+
+  /accounts/{id}/verify:
+    post:
+      tags:
+        - Accounts
+      summary: Verify an account
+      produces:
+        - application/json
+      parameters:
+        - name: id
+          in: path
+          description: ID of the account to verify
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Account successfully verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: Status text for account verification outcome
+                    type: string
+                  token:
+                    description: JWT Token to be used for API authentication
+                    type: string
+              examples:
+                accountCreationResponse:
+                  summary: Account successfully verified
+                  value: {
+                    "status": "successful",
+                    "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhY2MiOiJXS0RKMloxQyIsImV4cCI6MTcxMzk3ODc4NSwiaWF0IjoxNzEzMzczOTg1LCJqdGkiOiJYREQwNU5XNjY2IiwibmJmIjoxNzEzMzczOTg1fQ.MffJig2wVtxQQJSbDQetK7vH3GqWUccQ8UDDc9ZA3LEx6IVLs_kpP9wgS0OZ5UlB736NA3zDUmDrjty2guk1UQ"
+                    }
+        '401':
+          description: Authorization issue during account verification
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: Status text for account verification outcome
+                    type: string
+              examples:
+                accountCreationError:
+                  summary: Account not verified
+                  value: {
+                    "status": "unauthorized",
+                    }
 
   /league:
     post:
@@ -225,7 +293,8 @@ components:
     ErrorGeneral:
       summary: Response containing error message
       value: {
-        "message": "Missing required field"
+        "detail": "email already in use",
+        "status": "bad request"
         }
     ErrorUnauthorized:
       summary: Response containing unauthorized message
