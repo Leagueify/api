@@ -23,6 +23,11 @@ paths:
       tags:
       - Accounts
       summary: Create an account
+      description: '
+        Create an account for the Leagueify instance.
+        Accounts created before the email service is configured do not require verification.
+        **NOTE: Must be 18 or older to create an account.**
+        '
       requestBody:
         content:
           'application/json':
@@ -114,6 +119,10 @@ paths:
       tags:
         - Accounts
       summary: Verify an account
+      description: '
+        Verify a created account for the Leagueify instance.
+        Accounts created before the email service is configured do not require verification.
+        '
       produces:
         - application/json
       parameters:
