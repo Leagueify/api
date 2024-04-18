@@ -71,15 +71,15 @@ func (api *API) createAccount(c echo.Context) (err error) {
 	_, err = api.DB.Exec(`
 		INSERT INTO accounts (
 			id, first_name, last_name, email, password,
-			phone, date_of_birth, coach, volunteer
+			phone, date_of_birth, coach, volunteer, is_active
 		)
 		VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 		)`,
 		account.ID[:len(account.ID)-1], account.FirstName,
 		account.LastName, account.Email, account.Password,
 		account.Phone, account.DateOfBirth, account.Coach,
-		account.Volunteer,
+		account.Volunteer, true,
 	)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest,
