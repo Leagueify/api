@@ -4,7 +4,9 @@ Leagueify is an open source platform for managing sporting leagues of any size.
 
 This server is written in [Go][go-website] using the [Echo][echo-website] framework.
 
-## Local Development
+## Getting Started
+
+By default the API documentation can be found at http://server.localhost/api
 
 Leagueify API uses easy to use Makefile commands to get up and running quickly. Currently, Leagueify API requires Go 1.22.0 in order to run, please install Go before proceeding with the following commands:
 
@@ -18,6 +20,8 @@ make dev-start
 # Stop Leagueify and Remove Docker Image
 make dev-clean
 ```
+
+**NOTE:** Until the email configuration has been developed, it would be best to add `"id":     account.ID,` to `internal/api/accounts:96`
 
 ## Contribution Requirements
 
