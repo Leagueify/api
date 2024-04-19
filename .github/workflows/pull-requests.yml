@@ -15,10 +15,10 @@ jobs:
           go-version: "1.22.0"
       - name: Install Dependencies
         run: make init
-      - name: Check Go Formatting
-        run: if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then exit 1; fi
       - name: Vet Code 
         run: make vet
+      - name: Check Go Formatting
+        run: if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then exit 1; fi
 
   automated-tests:
     needs: check-formatting

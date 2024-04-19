@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # Production Services
   traefik:
@@ -25,7 +23,7 @@ services:
       - traefik.http.routers.traefik.tls=true
       - traefik.http.routers.traefik.tls.certresolver=myresolver
     ports:
-      - 80:8880
+      - 80:8888
       - 443:443
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -34,7 +32,7 @@ services:
 
   leagueify:
     profiles: ['prod']
-    image: ghcr.io/michaelcdubois/leagueify-api:latest
+    image: ghcr.io/leagueify/api:latest
     labels:
       - traefik.enable=true
       - traefik.http.routers.leagueify.rule=Host(`server.localhost`)
@@ -43,12 +41,11 @@ services:
       - traefik.http.routers.leagueify.tls.certresolver=myresolver
       - traefik.http.middlewares.leagueify.ratelimit.average=100
     environment:
-      DATABASE_USER: leagueify-user
-      DATABASE_PASS: leagueify-pass
-      DATABASE_NAME: leagueify
-      PORT: 8880
+      DB_CONN_STR: host=database user=leagueify-user password=leagueify-pass dbname=leagueify sslmode=disable
+      JWT_SECRET: NeverGonnaGiveYouUp
+      SENTRY_DSN: https://e7e4580a95ed8183cdf475d2fc826255@o4504687817261056.ingest.us.sentry.io/4506582744956928
     expose:
-      - 8880
+      - 8888
     restart: always
 
   database:
@@ -96,10 +93,9 @@ services:
       - traefik.http.routers.leagueify-dev.entrypoints=web
       - traefik.http.middlewares.leagueify-dev.ratelimit.average=100
     environment:
-      DATABASE_USER: leagueify-user
-      DATABASE_PASS: leagueify-pass
-      DATABASE_NAME: leagueify
-      PORT: 8888
+      DB_CONN_STR: host=database-dev user=leagueify-user password=leagueify-pass dbname=leagueify sslmode=disable
+      JWT_SECRET: NeverGonnaGiveYouUp
+      SENTRY_DSN: https://e7e4580a95ed8183cdf475d2fc826255@o4504687817261056.ingest.us.sentry.io/4506582744956928
     expose:
       - 8888
     volumes:
