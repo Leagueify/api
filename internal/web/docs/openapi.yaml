@@ -296,15 +296,15 @@ paths:
                   summary: List of Sports
                   value: [
                     {
-                      "id": "ADS",
+                      "id": "1",
                       "name": "baseball",
                     },
                     {
-                      "id": "FDS",
+                      "id": "2",
                       "name": "football",
                     },
                     {
-                      "id": "ASD",
+                      "id": "3",
                       "name": "hockey",
                     },
                   ]

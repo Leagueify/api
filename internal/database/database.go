@@ -10,6 +10,7 @@ import (
 
 func init() {
 	initAccounts()
+	initSports()
 }
 
 func Connect() (*sql.DB, error) {
@@ -42,6 +43,37 @@ func initAccounts() {
 			is_active BOOLEAN DEFAULT false
 		)
 	`)
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+}
+
+func initSports() {
+	sports := []string{
+		"baseball", "basketball", "football", "hockey", "quidditch",
+		"rugby", "soccer", "softball", "volleyball",
+	}
+	db, err := Connect()
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+	defer db.Close()
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS sports (
+			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			name TEXT NOT NULL
+		)
+	`)
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+	for _, sport := range sports {
+		if _, err = db.Exec(`
+			INSERT INTO sports (id, name) VALUES (DEFAULT, $1)
+		`, sport); err != nil {
+			sentry.CaptureException(err)
+		}
+	}
 	if err != nil {
 		sentry.CaptureException(err)
 	}
