@@ -12,7 +12,7 @@ info:
     url: https://github.com/Leagueify/api/issues
 
 servers:
-  - url: http://server.localhost/api
+  - url: http://localhost/api
     description: Local Development Server - Docker
   - url: http://localhost:8000/api
     description: Local Development Server - Standalone Executable
@@ -142,15 +142,15 @@ paths:
                   status:
                     description: Status text for account verification outcome
                     type: string
-                  token:
-                    description: JWT Token to be used for API authentication
+                  apikey:
+                    description: API Key used for API Authentication
                     type: string
               examples:
                 accountCreationResponse:
                   summary: Account successfully verified
                   value: {
                     "status": "successful",
-                    "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhY2MiOiJXS0RKMloxQyIsImV4cCI6MTcxMzk3ODc4NSwiaWF0IjoxNzEzMzczOTg1LCJqdGkiOiJYREQwNU5XNjY2IiwibmJmIjoxNzEzMzczOTg1fQ.MffJig2wVtxQQJSbDQetK7vH3GqWUccQ8UDDc9ZA3LEx6IVLs_kpP9wgS0OZ5UlB736NA3zDUmDrjty2guk1UQ"
+                    "apikey": "BHS4R8N34XQGCGEGWH2H2EDV77QR6TC59169WWPDAPX9F4JB1RETZJ7AEZEDVE1S"
                     }
         '401':
           description: Authorization issue during account verification
@@ -169,13 +169,13 @@ paths:
                     "status": "unauthorized",
                     }
 
-  /league:
+  /leagues:
     post:
       tags:
-      - League
+      - Leagues
       summary: Create a league
       security:
-        - bearerToken: []
+        - apiKey: []
       requestBody:
         content:
           'application/json':
@@ -265,6 +265,66 @@ paths:
                 ErrorUnauthorized:
                   $ref: '#/components/examples/ErrorUnauthorized'
 
+  /sports:
+    get:
+      tags:
+        - Sports
+      summary: List Sports
+      description: '
+        This endpoint will return a list of supported and compatible Leagueify sports.
+        '
+      produces:
+        - application/json
+      security:
+        - apiKey: []
+      responses:
+        '200':
+          description: Returns list of sports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  divisions:
+                    description: List of Sports
+                    type: array
+                    items:
+                      type: object
+                      $ref: '#/components/schemas/Sports'
+              examples:
+                responseListSports:
+                  summary: List of Sports
+                  value: [
+                    {
+                      "id": "ADS",
+                      "name": "baseball",
+                    },
+                    {
+                      "id": "FDS",
+                      "name": "football",
+                    },
+                    {
+                      "id": "ASD",
+                      "name": "hockey",
+                    },
+                  ]
+        '401':
+          description: Authorization Issue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: Status text for account verification outcome
+                    type: string
+              examples:
+                accountCreationError:
+                  summary: Account not verified
+                  value: {
+                    "status": "unauthorized",
+                    }
+
 components:
   schemas:
     Division:
@@ -298,6 +358,15 @@ components:
         message:
           description: Error message detailing the request issue
           type: string
+    Sports:
+      type: object
+      properties:
+        id:
+          description: Sport id
+          type: string
+        name:
+          description: Sport name
+          type: string
   examples:
     ErrorGeneral:
       summary: Response containing error message
@@ -312,7 +381,7 @@ components:
         }
 
   securitySchemes:
-    bearerToken:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    apiKey:
+      type: apiKey
+      name: apiKey
+      in: header
