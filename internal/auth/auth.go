@@ -1,4 +1,4 @@
-package util
+package auth
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Leagueify/api/internal/database"
+	"github.com/Leagueify/api/internal/util"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -13,7 +14,7 @@ import (
 func AuthRequired(f func(echo.Context) error) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		apikey := c.Request().Header.Get("apiKey")
-		if !VerifyToken(apikey) {
+		if !util.VerifyToken(apikey) {
 			return c.JSON(http.StatusUnauthorized,
 				map[string]string{
 					"status": "unauthorized",
