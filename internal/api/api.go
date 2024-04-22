@@ -33,5 +33,4 @@ func Routes(e *echo.Echo) {
 	routes := e.Group("/api")
 	// Register API Routes
 	api.Accounts(routes)
-	api.Sports(routes)
 }
