@@ -14,7 +14,7 @@ info:
 servers:
   - url: http://localhost/api
     description: Local Development Server - Docker
-  - url: http://localhost:8000/api
+  - url: http://localhost:8888/api
     description: Local Development Server - Standalone Executable
 
 paths:

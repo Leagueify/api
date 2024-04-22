@@ -6,7 +6,7 @@ This server is written in [Go][go-website] using the [Echo][echo-website] framew
 
 ## Getting Started
 
-By default the API documentation can be found at http://server.localhost/api
+By default the API documentation can be found at http://localhost/api
 
 Leagueify API uses easy to use Makefile commands to get up and running quickly. Currently, Leagueify API requires Go 1.22.0 in order to run, please install Go before proceeding with the following commands:
 
