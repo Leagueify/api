@@ -20,7 +20,7 @@ func AuthRequired(f func(echo.Context) error) echo.HandlerFunc {
 				},
 			)
 		}
-		db, err := database.Connect();
+		db, err := database.Connect()
 		if err != nil {
 			return c.JSON(http.StatusBadGateway,
 				map[string]string{
