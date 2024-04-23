@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/Leagueify/api/internal/auth"
 	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 )
@@ -14,7 +13,7 @@ type sport struct {
 }
 
 func (api *API) Sports(e *echo.Group) {
-	e.GET("/sports", auth.AuthRequired(api.listSports))
+	e.GET("/sports", api.AuthRequired(api.listSports))
 }
 
 func (api *API) listSports(c echo.Context) (err error) {

@@ -1,6 +1,20 @@
 package model
 
 type (
+	Account struct {
+		ID          string
+		FirstName   string
+		LastName    string
+		Email       string
+		Password    string
+		Phone       string
+		DateOfBirth string
+		Coach       bool
+		Volunteer   bool
+		APIKey      string
+		IsActive    bool
+	}
+
 	AccountCreation struct {
 		ID          string
 		FirstName   string `json:"firstName" validate:"required"`
