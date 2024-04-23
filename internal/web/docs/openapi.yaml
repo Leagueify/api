@@ -14,7 +14,7 @@ info:
 servers:
   - url: http://localhost/api
     description: Local Development Server - Docker
-  - url: http://localhost:8000/api
+  - url: http://localhost:8888/api
     description: Local Development Server - Standalone Executable
 
 paths:
@@ -296,15 +296,15 @@ paths:
                   summary: List of Sports
                   value: [
                     {
-                      "id": "ADS",
+                      "id": "1",
                       "name": "baseball",
                     },
                     {
-                      "id": "FDS",
+                      "id": "2",
                       "name": "football",
                     },
                     {
-                      "id": "ASD",
+                      "id": "3",
                       "name": "hockey",
                     },
                   ]

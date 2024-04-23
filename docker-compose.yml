@@ -35,7 +35,7 @@ services:
     image: ghcr.io/leagueify/api:latest
     labels:
       - traefik.enable=true
-      - traefik.http.routers.leagueify.rule=Host(`server.localhost`)
+      - traefik.http.routers.leagueify.rule=Host(`localhost`)
       - traefik.http.routers.leagueify.entrypoints=websecure
       - traefik.http.routers.leagueify.tls=true
       - traefik.http.routers.leagueify.tls.certresolver=myresolver
@@ -88,7 +88,7 @@ services:
     command: "air"
     labels:
       - traefik.enable=true
-      - traefik.http.routers.leagueify-dev.rule=Host(`server.localhost`)
+      - traefik.http.routers.leagueify-dev.rule=Host(`localhost`)
       - traefik.http.routers.leagueify-dev.entrypoints=web
       - traefik.http.middlewares.leagueify-dev.ratelimit.average=100
     environment:

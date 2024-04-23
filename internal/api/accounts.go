@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Leagueify/api/internal/auth"
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
 	"github.com/getsentry/sentry-go"
@@ -58,7 +59,7 @@ func (api *API) createAccount(c echo.Context) (err error) {
 	// Set account.ID overriding provided ID
 	account.ID = util.SignedToken(8)
 	// Hash Password
-	if err := util.HashPassword(&account.Password); err != nil {
+	if err := auth.HashPassword(&account.Password); err != nil {
 		sentry.CaptureException(err)
 		return c.JSON(http.StatusBadRequest,
 			map[string]string{
