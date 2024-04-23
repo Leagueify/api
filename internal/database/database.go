@@ -38,7 +38,7 @@ func initAccounts() {
 			date_of_birth TEXT NOT NULL,
 			coach BOOLEAN DEFAULT false,
 			volunteer BOOLEAN DEFAULT false,
-			token TEXT,
+			apikey TEXT,
 			is_active BOOLEAN DEFAULT false
 		)
 	`)

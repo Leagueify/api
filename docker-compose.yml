@@ -42,7 +42,6 @@ services:
       - traefik.http.middlewares.leagueify.ratelimit.average=100
     environment:
       DB_CONN_STR: host=database user=leagueify-user password=leagueify-pass dbname=leagueify sslmode=disable
-      JWT_SECRET: NeverGonnaGiveYouUp
       SENTRY_DSN: https://e7e4580a95ed8183cdf475d2fc826255@o4504687817261056.ingest.us.sentry.io/4506582744956928
     expose:
       - 8888
@@ -94,7 +93,6 @@ services:
       - traefik.http.middlewares.leagueify-dev.ratelimit.average=100
     environment:
       DB_CONN_STR: host=database-dev user=leagueify-user password=leagueify-pass dbname=leagueify sslmode=disable
-      JWT_SECRET: NeverGonnaGiveYouUp
       SENTRY_DSN: https://e7e4580a95ed8183cdf475d2fc826255@o4504687817261056.ingest.us.sentry.io/4506582744956928
     expose:
       - 8888

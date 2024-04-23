@@ -6,7 +6,6 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/go-playground/validator/v10 v10.19.0
-	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.9.0

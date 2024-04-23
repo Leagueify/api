@@ -217,10 +217,10 @@ func TestVerifyAccount(t *testing.T) {
 			Description: "Valid Account ID",
 			ID:          "ERCXNX57",
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("^UPDATE accounts SET is_active = true, token = (.+) WHERE id = (.+) AND is_active = false$").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("^UPDATE accounts SET is_active = true, apikey = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			ExpectedStatusCode: http.StatusOK,
-			ExpectedContent:    `"token":"(.+)\.(.+)\.(.+)"`,
+			ExpectedContent:    `"apikey":"(.+)"`,
 		},
 		{
 			Description:        "Invalid Account ID",
@@ -232,7 +232,7 @@ func TestVerifyAccount(t *testing.T) {
 			Description: "Account ID not in Database",
 			ID:          "ERCXNX57",
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("UPDATE accounts SET is_active = true, token = (.+) WHERE id = (.+) AND is_active = false$").WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectExec("UPDATE accounts SET is_active = true, apikey = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(0, 0))
 			},
 			ExpectedStatusCode: http.StatusUnauthorized,
 			ExpectedContent:    `"status":"unauthorized"`,

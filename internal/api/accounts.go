@@ -107,11 +107,11 @@ func (api *API) verifyAccount(c echo.Context) (err error) {
 			},
 		)
 	}
-	// Update Account
-	accountToken := util.SignedToken(10)
+	// Generate API Key
+	accountAPIKey := util.SignedToken(64)
 	result, err := api.DB.Exec(`
-		UPDATE accounts SET is_active = true, token = $1 WHERE id = $2 AND is_active = false
-	`, accountToken, accountID[:len(accountID)-1])
+		UPDATE accounts SET is_active = true, apikey = $1 WHERE id = $2
+	`, accountAPIKey[:len(accountAPIKey)-1], accountID[:len(accountID)-1])
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized,
 			map[string]string{
@@ -126,21 +126,11 @@ func (api *API) verifyAccount(c echo.Context) (err error) {
 			},
 		)
 	}
-	// Generate JWT
-	accountJWT, err := util.GenerateJWT(accountID, accountToken)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "bad request",
-				"detail": util.HandleError(err),
-			},
-		)
-	}
-	// Return JWT
+	// Return API Key
 	return c.JSON(http.StatusOK,
 		map[string]string{
 			"status": "successful",
-			"token":  accountJWT,
+			"apikey": accountAPIKey,
 		},
 	)
 }
