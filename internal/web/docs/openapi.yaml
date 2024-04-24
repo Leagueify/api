@@ -188,46 +188,15 @@ paths:
                 sportID:
                   description: ID of desired sport for the league
                   type: integer
-                divisions:
-                  description: List of Division Objects
-                  type: array
-                  items:
-                    type: object
-                    $ref: '#/components/schemas/Division'
-                positions:
-                  description: Positions players can fill on a team
-                  type: array
-                  items:
-                    type: string
               required:
                 - name
                 - sportID
-                - divisions
-                - positions
             examples:
               valid payload:
                 summary: Valid league payload
                 value: {
-                  "name": "Leagueify Open League",
-                  "sportID": 1,
-                  "divisions": [
-                    {
-                      "name": "14U",
-                      "minAge": 10,
-                      "maxAge": 14,
-                      "open": false
-                    },
-                    {
-                      "name": "18U",
-                      "minAge": 13,
-                      "maxAge": 18,
-                      "open": false
-                    }
-                  ],
-                  "positions": [
-                    "Skater",
-                    "Goalie"
-                    ]
+                  "name": "Leagueify Hockey League",
+                  "sportID": 4,
                   }
       responses:
         '201':
@@ -244,7 +213,8 @@ paths:
                 leagueResponse:
                   summary: Response containing the League ID
                   value: {
-                    "leagueID": 1
+                    "status": "successful",
+                    "leagueID": "3XQD7A"
                     }
         '400':
           description: Error Creating Account
@@ -327,35 +297,16 @@ paths:
 
 components:
   schemas:
-    Division:
-      type: object
-      properties:
-        name:
-          description: Division name
-          type: string
-        minAge:
-          description: Minimum age player needs to be to play in the division
-          type: integer
-          minimum: 1
-          maximum: 127
-        maxAge:
-          description: Maximum age player needs to be to play in the division
-          type: integer
-          minimum: 1
-          maximum: 127
-        open:
-          description: Allows all players to join the division
-          type: boolean
     ErrorGeneral:
       type: object
       properties:
-        message:
+        status:
           description: Error message detailing the request issue
           type: string
     ErrorUnauthorized:
       type: object
       properties:
-        message:
+        status:
           description: Error message detailing the request issue
           type: string
     Sports:
@@ -377,7 +328,7 @@ components:
     ErrorUnauthorized:
       summary: Response containing unauthorized message
       value: {
-        "message": "Unauthorized"
+        "status": "unauthorized"
         }
 
   securitySchemes:

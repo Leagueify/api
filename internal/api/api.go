@@ -50,7 +50,6 @@ func (api *API) AuthRequired(f func(echo.Context) error) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized,
 				map[string]string{
 					"status": "unauthorized",
-					"detail": err.Error(),
 				},
 			)
 		}
