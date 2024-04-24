@@ -2,54 +2,10 @@ package auth
 
 import (
 	"errors"
-	"net/http"
 	"strings"
 
-	"github.com/Leagueify/api/internal/database"
-	"github.com/Leagueify/api/internal/util"
-	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
-
-func AuthRequired(f func(echo.Context) error) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		apikey := c.Request().Header.Get("apiKey")
-		if !util.VerifyToken(apikey) {
-			return c.JSON(http.StatusUnauthorized,
-				map[string]string{
-					"status": "unauthorized",
-				},
-			)
-		}
-		db, err := database.Connect()
-		if err != nil {
-			return c.JSON(http.StatusBadGateway,
-				map[string]string{
-					"status": "bad gateway",
-				},
-			)
-		}
-		defer db.Close()
-		result, err := db.Exec(`
-			SELECT apikey FROM accounts where apikey = $1 AND is_active = true
-		`, apikey[:len(apikey)-1])
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized,
-				map[string]string{
-					"status": "unauthorized",
-				},
-			)
-		}
-		if rows, err := result.RowsAffected(); err != nil || rows != 1 {
-			return c.JSON(http.StatusUnauthorized,
-				map[string]string{
-					"status": "unauthorized",
-				},
-			)
-		}
-		return f(c)
-	}
-}
 
 func ComparePasswords(providedPassword, storedPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(storedPassword), []byte(providedPassword))

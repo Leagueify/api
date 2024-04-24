@@ -10,6 +10,7 @@ import (
 
 func init() {
 	initAccounts()
+	initLeagues()
 	initSports()
 }
 
@@ -41,6 +42,25 @@ func initAccounts() {
 			volunteer BOOLEAN DEFAULT false,
 			apikey TEXT,
 			is_active BOOLEAN DEFAULT false
+		)
+	`)
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+}
+
+func initLeagues() {
+	db, err := Connect()
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+	defer db.Close()
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS leagues (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			sport_id INTEGER NOT NULL,
+			master_admin TEXT NOT NULL
 		)
 	`)
 	if err != nil {
