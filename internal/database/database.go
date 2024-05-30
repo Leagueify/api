@@ -11,6 +11,7 @@ import (
 func init() {
 	initAccounts()
 	initLeagues()
+	initPositions()
 	initSports()
 }
 
@@ -61,6 +62,23 @@ func initLeagues() {
 			name TEXT NOT NULL,
 			sport_id INTEGER NOT NULL,
 			master_admin TEXT NOT NULL
+		)
+	`)
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+}
+
+func initPositions() {
+	db, err := Connect()
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+	defer db.Close()
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS positions (
+			id TEXT PRIMARY KEY,
+			name TEXT UNIQUE NOT NULL
 		)
 	`)
 	if err != nil {

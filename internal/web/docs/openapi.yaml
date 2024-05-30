@@ -30,7 +30,7 @@ paths:
         '
       requestBody:
         content:
-          'application/json':
+          application/json:
             schema:
               type: object
               properties:
@@ -88,31 +88,17 @@ paths:
                   "volunteer": false
                 }
       responses:
-        '201':
+        201:
           description: Account Created
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    description: Account Successfully Created
-                    type: string
+                $ref: "#/components/successful/schema"
               examples:
-                accountCreationResponse:
-                  summary: Account Successfully Created
-                  value: {
-                    "status": "successful"
-                    }
-        '400':
-          description: Error Creating Account
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorGeneral'
-              examples:
-                ErrorGeneral:
-                  $ref: '#/components/examples/ErrorGeneral'
+                accountCreated:
+                  $ref: "#/components/successful/example"
+        400:
+          $ref: "#/components/errors/badRequest"
 
   /accounts/{id}/verify:
     post:
@@ -132,7 +118,7 @@ paths:
           required: true
           type: string
       responses:
-        '200':
+        200:
           description: Account successfully verified
           content:
             application/json:
@@ -152,22 +138,8 @@ paths:
                     "status": "successful",
                     "apikey": "BHS4R8N34XQGCGEGWH2H2EDV77QR6TC59169WWPDAPX9F4JB1RETZJ7AEZEDVE1S"
                     }
-        '401':
-          description: Authorization issue during account verification
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    description: Status text for account verification outcome
-                    type: string
-              examples:
-                accountCreationError:
-                  summary: Account not verified
-                  value: {
-                    "status": "unauthorized",
-                    }
+        401:
+          $ref: "#/components/errors/unauthorized"
 
   /leagues:
     post:
@@ -178,7 +150,7 @@ paths:
         - apiKey: []
       requestBody:
         content:
-          'application/json':
+          application/json:
             schema:
               type: object
               properties:
@@ -199,42 +171,69 @@ paths:
                   "sportID": 4,
                   }
       responses:
-        '201':
-          description: Account Created
+        201:
+          description: League Created
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  league:
-                    description: League ID
-                    type: integer
+                $ref: "#/components/successful/schema"
               examples:
-                leagueResponse:
-                  summary: Response containing the League ID
-                  value: {
-                    "status": "successful",
-                    "leagueID": "3XQD7A"
-                    }
-        '400':
-          description: Error Creating Account
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorGeneral'
-              examples:
-                ErrorGeneral:
-                  $ref: '#/components/examples/ErrorGeneral'
-        '403':
-          description: Error Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorUnauthorized'
-              examples:
-                ErrorUnauthorized:
-                  $ref: '#/components/examples/ErrorUnauthorized'
+                leagueCreated:
+                  $ref: "#/components/successful/example"
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
 
+  /positions:
+    post:
+      tags:
+        - Positions
+      summary: Create Position(s)
+      description: '
+        Create player positions available within the league.
+        '
+      produces:
+        - application/json
+      security:
+        - apiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/positions/schema"
+            examples:
+              validPositionRequest:
+                $ref: "#/components/positions/examples/request"
+      responses:
+        201:
+          description: Position(s) Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/successful/schema"
+              examples:
+                positionCreated:
+                  $ref: "#/components/successful/example"
+        401:
+          $ref: "#/components/errors/unauthorized"
+    get:
+      tags:
+        - Positions
+      summary: List Positions
+      description: '
+        This endpoint will return a list of available league positions.
+        '
+      produces:
+        - application/json
+      security:
+        - apiKey: []
+      responses:
+        200:
+          $ref: "#/components/positions/examples/response"
+        401:
+          $ref: "#/components/errors/unauthorized"
+  
   /sports:
     get:
       tags:
@@ -248,7 +247,7 @@ paths:
       security:
         - apiKey: []
       responses:
-        '200':
+        200:
           description: Returns list of sports
           content:
             application/json:
@@ -278,37 +277,93 @@ paths:
                       "name": "hockey",
                     },
                   ]
-        '401':
-          description: Authorization Issue
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    description: Status text for account verification outcome
-                    type: string
-              examples:
-                accountCreationError:
-                  summary: Account not verified
-                  value: {
-                    "status": "unauthorized",
-                    }
+        401:
+          $ref: "#/components/errors/unauthorized"
 
 components:
+  errors:
+    badRequest:
+      description: Error with request body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                description: Error message detailing the request issue
+                type: string
+          examples:
+            default:
+              summary: Response containing error message
+              value: {
+                "detail": "< details about the error >",
+                "status": "bad request"
+                }
+    unauthorized:
+      description: Authorization Issue
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                description: Error message detailing the request issue
+                type: string
+          examples:
+            default:
+              summary: Response containing unauthorized message
+              value: {
+                "status": "unauthorized"
+                }
+  positions:
+    schema:
+      type: object
+      properties:
+        positions:
+          description: List of Positions to create
+          type: array
+          items:
+            description: Position name
+            type: string
+    examples:
+      request:
+        summary: Request body with positions
+        value: {
+            "positions": [
+              "skater",
+              "goalie"
+            ]
+          }
+      response:
+        description: List of Positions
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                description: List of Positions
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: ID of position
+                  name:
+                    type: string
+                    description: Name of position
+            examples:
+              default:
+                summary: Response creating position(s)
+                value: [
+                    {
+                      "id": "123",
+                      "name": "skater",
+                    },
+                    {
+                      "id": "456",
+                      "name": "goalie"
+                    }
+                  ]
   schemas:
-    ErrorGeneral:
-      type: object
-      properties:
-        status:
-          description: Error message detailing the request issue
-          type: string
-    ErrorUnauthorized:
-      type: object
-      properties:
-        status:
-          description: Error message detailing the request issue
-          type: string
     Sports:
       type: object
       properties:
@@ -318,19 +373,18 @@ components:
         name:
           description: Sport name
           type: string
-  examples:
-    ErrorGeneral:
-      summary: Response containing error message
+  successful:
+    schema:
+      type: object
+      properties:
+        status:
+          description: Successful Request Response
+          type: string
+    example:
+      summary: Successful Request Response
       value: {
-        "detail": "email already in use",
-        "status": "bad request"
+          "status": "successful"
         }
-    ErrorUnauthorized:
-      summary: Response containing unauthorized message
-      value: {
-        "status": "unauthorized"
-        }
-
   securitySchemes:
     apiKey:
       type: apiKey

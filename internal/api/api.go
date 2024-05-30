@@ -76,5 +76,6 @@ func Routes(e *echo.Echo) {
 	// Register API Routes
 	api.Accounts(routes)
 	api.Leagues(routes)
+	api.Positions(routes)
 	api.Sports(routes)
 }
