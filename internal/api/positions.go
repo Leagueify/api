@@ -10,7 +10,7 @@ import (
 )
 
 func (api *API) Positions(e *echo.Group) {
-	e.GET("/positions", api.AuthRequired(api.listPositions))
+	e.GET("/positions", api.requiresAuth(api.listPositions))
 	e.POST("/positions", api.AuthRequired(api.createPosition))
 }
 

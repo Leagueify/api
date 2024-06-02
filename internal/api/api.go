@@ -19,7 +19,7 @@ type API struct {
 	Validator *validator.Validate
 }
 
-func (api *API) AuthRequired(f func(echo.Context) error) echo.HandlerFunc {
+func (api *API) requiresAuth(f func(echo.Context) error) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		account := model.Account{}
 		apikey := c.Request().Header.Get("apiKey")

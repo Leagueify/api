@@ -13,7 +13,7 @@ type sport struct {
 }
 
 func (api *API) Sports(e *echo.Group) {
-	e.GET("/sports", api.AuthRequired(api.listSports))
+	e.GET("/sports", api.requiresAuth(api.listSports))
 }
 
 func (api *API) listSports(c echo.Context) (err error) {
