@@ -27,4 +27,9 @@ type (
 		Coach       bool   `json:"coach"`
 		Volunteer   bool   `json:"volunteer"`
 	}
+
+	AccountLogin struct {
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required"`
+	}
 )

@@ -100,6 +100,98 @@ paths:
         400:
           $ref: "#/components/errors/badRequest"
 
+  /accounts/login:
+    post:
+      tags:
+        - Accounts
+      summary: Account login
+      description: '
+        Login to a created account for the Leagueify instance.
+        This will return an API key that shall be used for API requests.
+        '
+      produces:
+        - application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  description: Email associated to the account
+                  type: string
+                password:
+                  description: Raw user password for the account
+                  type: string
+              required:
+                - email
+                - password
+            examples:
+              valid payload:
+                summary: Valid account login payload
+                value: {
+                  "email": "test@leagueify.org",
+                  "password": "Test123!",
+                }
+      responses:
+        200:
+          description: Account Login Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: Status text for account login outcome
+                    type: string
+                  apikey:
+                    description: API Key used for API Authentication
+                    type: string
+              examples:
+                accountLoginResponse:
+                  summary: Account login successful
+                  value: {
+                    "status": "successful",
+                    "apikey": "BHS4R8N34XQGCGEGWH2H2EDV77QR6TC59169WWPDAPX9F4JB1RETZJ7AEZEDVE1S"
+                    }
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
+
+  /accounts/logout:
+    post:
+      tags:
+        - Accounts
+      summary: Account logout
+      security:
+        - apiKey: []
+      description: '
+        Logout of an account for the Leagueify instance.
+        This will return an empty body.
+        '
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Account Logout Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: Status text for account logout
+                    type: string
+              examples:
+                accountLogoutSuccessful:
+                  summary: Account logout successful
+                  value: {
+                    "status": "successful",
+                  }
+        401:
+          $ref: "#/components/errors/unauthorized"
+
   /accounts/{id}/verify:
     post:
       tags:

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/Leagueify/api/internal/auth"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -197,6 +198,140 @@ func TestCreateAccount(t *testing.T) {
 			assert.True(t, match, fmt.Sprintf("%v: Expected %v but received %v",
 				test.Description, test.ExpectedContent, rec.Body.String(),
 			))
+		}
+		// Assert All Expectations Met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}
+
+func TestLoginAccount(t *testing.T) {
+	// Create Mock DB
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("ERROR: '%s' was not expected when creating mock DB", err)
+	}
+	defer db.Close()
+	// Setup Password
+	validPassword := "Test123!"
+	if err := auth.HashPassword(&validPassword); err != nil {
+		t.Fatalf("ERROR: '%s' was not expected when hashing password", err)
+	}
+	testCases := []struct {
+		Description        string
+		RequestBody        string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+	}{
+		{
+			Description:        "Invalid JSON Payload",
+			RequestBody:        `{`,
+			ExpectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			Description: "Valid Account Credentials",
+			RequestBody: `{"email":"test@leagueify.org","password":"Test123!"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT password, is_active FROM accounts WHERE email = (.+) AND is_active = true").WillReturnRows(sqlmock.NewRows([]string{"password", "is_active"}).AddRow(&validPassword, true))
+				mock.ExpectExec("UPDATE accounts SET apikey = (.+) WHERE email = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "Valid Credentials Inactive Account",
+			RequestBody: `{}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT password, is_active FROM accounts WHERE email = (.+) AND is_active = true$").WillReturnRows(sqlmock.NewRows([]string{"password", "is_active"}).AddRow("Test123!", false))
+			},
+			ExpectedStatusCode: http.StatusUnauthorized,
+		},
+		{
+			Description: "Invalid Account Credentials - Incorrect Password",
+			RequestBody: `{}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT password, is_active FROM accounts WHERE email = (.+) AND is_active = true$").WillReturnRows(sqlmock.NewRows([]string{"password", "is_active"}).AddRow("Pass123!", true))
+			},
+			ExpectedStatusCode: http.StatusUnauthorized,
+		},
+		{
+			Description: "Invalid Account Credentials - Incorrect Email",
+			RequestBody: `{}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT password, is_active FROM accounts WHERE email = (.+) AND is_active = true$").WillReturnRows(sqlmock.NewRows([]string{"password", "is_active"}))
+			},
+			ExpectedStatusCode: http.StatusUnauthorized,
+		},
+	}
+	// Execute Test Cases
+	for _, test := range testCases {
+		// Determine if tests should have mock DB
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// Initialize Echo and the Echo validator
+		e := echo.New()
+		e.Validator = &API{Validator: validator.New()}
+		api := API{DB: db}
+		reqBody := []byte(test.RequestBody)
+		req := httptest.NewRequest(http.MethodPost, "/api/accounts/login", bytes.NewBuffer(reqBody))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		// Perform Request
+		if assert.NoError(t, api.loginAccount(c)) {
+			// Assert Status Code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+		}
+		// Assert All Expectations Met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}
+
+func TestLogoutAccount(t *testing.T) {
+	// Create Mock DB
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("ERROR: '%s' was not expected when creating mock DB", err)
+	}
+	defer db.Close()
+	testCases := []struct {
+		Description        string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+	}{
+		{
+			Description: "Valid API Key",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT email, apikey FROM accounts WHERE apikey = (.+)").WillReturnRows(sqlmock.NewRows([]string{"email", "apikey"}).AddRow("test@leagueify.org", "1234"))
+				mock.ExpectExec("UPDATE accounts SET apikey = '' WHERE email = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "Invalid API Key",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT email, apikey FROM accounts WHERE apikey = (.+)").WillReturnRows(sqlmock.NewRows([]string{"email", "apikey"}))
+			},
+			ExpectedStatusCode: http.StatusUnauthorized,
+		},
+	}
+	// Execute Test Cases
+	for _, test := range testCases {
+		// Determine if tests should have mock DB
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// Initialize Echo and the Echo validator
+		e := echo.New()
+		e.Validator = &API{Validator: validator.New()}
+		api := API{DB: db}
+		req := httptest.NewRequest(http.MethodPost, "/api/accounts/logout", nil)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		// Perform Request
+		if assert.NoError(t, api.logoutAccount(c)) {
+			// Assert Status Code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
 		}
 		// Assert All Expectations Met
 		assert.NoError(t, mock.ExpectationsWereMet())
