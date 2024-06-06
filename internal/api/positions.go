@@ -10,8 +10,8 @@ import (
 )
 
 func (api *API) Positions(e *echo.Group) {
-	e.GET("/positions", api.AuthRequired(api.listPositions))
-	e.POST("/positions", api.AuthRequired(api.createPosition))
+	e.GET("/positions", api.requiresAuth(api.listPositions))
+	e.POST("/positions", api.requiresAdmin(api.createPosition))
 }
 
 func (api *API) createPosition(c echo.Context) (err error) {

@@ -41,8 +41,9 @@ func initAccounts() {
 			date_of_birth TEXT NOT NULL,
 			coach BOOLEAN DEFAULT false,
 			volunteer BOOLEAN DEFAULT false,
-			apikey TEXT,
-			is_active BOOLEAN DEFAULT false
+			apikey TEXT NOT NULL,
+			is_active BOOLEAN DEFAULT false,
+			is_admin BOOLEAN DEFAULT false
 		)
 	`)
 	if err != nil {

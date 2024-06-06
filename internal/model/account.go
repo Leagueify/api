@@ -13,6 +13,7 @@ type (
 		Volunteer   bool
 		APIKey      string
 		IsActive    bool
+		IsAdmin     bool
 	}
 
 	AccountCreation struct {

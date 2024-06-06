@@ -10,7 +10,7 @@ import (
 )
 
 func (api *API) Leagues(e *echo.Group) {
-	e.POST("/leagues", api.AuthRequired(api.createLeague))
+	e.POST("/leagues", api.requiresAdmin(api.createLeague))
 }
 
 func (api *API) createLeague(c echo.Context) error {
