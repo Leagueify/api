@@ -35,7 +35,7 @@ func TestCreateAccount(t *testing.T) {
 			Description: "Valid Request Body",
 			RequestBody: `{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.org","password":"Test123!","dateOfBirth":"1990-08-31","phone":"+12085550000"}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT \\* FROM accounts").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "email", "password", "date_of_birth", "coach", "volunteer", "apikey", "is_active", "is_admin"}))
+				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM accounts").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 				mock.ExpectExec("INSERT INTO accounts (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			ExpectedStatusCode: http.StatusCreated,
@@ -134,7 +134,7 @@ func TestCreateAccount(t *testing.T) {
 			Description: "Duplicate Email Address",
 			RequestBody: `{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Test123!","dateOfBirth":"1990-08-31","phone":"+12085550000"}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT \\* FROM accounts").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "email", "password", "date_of_birth", "coach", "volunteer", "apikey", "is_active", "is_admin"}))
+				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM accounts").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 				mock.ExpectExec("^INSERT INTO accounts (.+) VALUES (.+)$").WillReturnError(&pq.Error{Code: "23505", Constraint: "accounts_email_key"})
 			},
 			ExpectedStatusCode: http.StatusBadRequest,
@@ -144,7 +144,7 @@ func TestCreateAccount(t *testing.T) {
 			Description: "Duplicate Phone",
 			RequestBody: `{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Test123!","dateOfBirth":"1990-08-31","phone":"+12085550000"}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT \\* FROM accounts").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "email", "password", "date_of_birth", "coach", "volunteer", "apikey", "is_active", "is_admin"}))
+				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM accounts").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 				mock.ExpectExec("^INSERT INTO accounts (.+) VALUES (.+)$").WillReturnError(&pq.Error{Code: "23505", Constraint: "accounts_phone_key"})
 			},
 			ExpectedStatusCode: http.StatusBadRequest,
@@ -160,7 +160,7 @@ func TestCreateAccount(t *testing.T) {
 			Description: "Exactly 18 Account Creator",
 			RequestBody: fmt.Sprintf(`{"firstName":"Leagueify","lastName":"Tests","email":"test@leagueify.com","password":"Testu123!","dateOfBirth":"%v","phone":"+12085550000"}`, time.Now().AddDate(-18, 0, 0).Format(time.DateOnly)),
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT \\* FROM accounts").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "email", "password", "date_of_birth", "coach", "volunteer", "apikey", "is_active", "is_admin"}))
+				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM accounts").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 				mock.ExpectExec("INSERT INTO accounts (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			ExpectedStatusCode: http.StatusCreated,
