@@ -39,6 +39,7 @@ func initAccounts() {
 			password TEXT NOT NULL,
 			phone TEXT NOT NULL UNIQUE,
 			date_of_birth TEXT NOT NULL,
+			player_ids TEXT[] NOT NULL,
 			coach BOOLEAN DEFAULT false,
 			volunteer BOOLEAN DEFAULT false,
 			apikey TEXT NOT NULL,
