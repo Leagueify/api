@@ -301,6 +301,83 @@ func TestDeletePlayer(t *testing.T) {
 	}
 }
 
+func TestGetPlayer(t *testing.T) {
+	// Mock DB
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
+	}
+	defer db.Close()
+	testCases := []struct {
+		Description        string
+		ID                 string
+		Account            *model.Account
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+	}{
+		{
+			Description:        "Invalid Player ID",
+			ID:                 "ABD1234",
+			Account:            &model.Account{ID: "123ABC"},
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+		{
+			Description:        "Valid Player ID no Player ID in Account",
+			ID:                 "QP4RD39CEF",
+			Account:            &model.Account{ID: "123ABC"},
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+		{
+			Description:        "Valid Player ID not in Account",
+			ID:                 "49QRBF09YA",
+			Account:            &model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CEF"}},
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+		{
+			Description: "Valid Player ID in Account",
+			ID:          "49QRBF09YA",
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09YA"}},
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM players WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "date_of_birth", "position", "team", "division", "is_registered"}).AddRow("49QRBF09YA", "Leagueify", "Test", "1990-08-31", "goalie", "", "", false))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "Valid Player ID in Account with Multiple Player IDs",
+			ID:          "49QRBF09YA",
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCDE", "49QRBF09YA"}},
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM players WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "date_of_birth", "position", "team", "division", "is_registered"}).AddRow("49QRBF09YA", "Leagueify", "Test", "1990-08-31", "goalie", "", "", false))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+	}
+	// Execute Test Cases
+	for _, test := range testCases {
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// Initialize Echo and the Echo validator
+		e := echo.New()
+		e.Validator = &API{Validator: validator.New()}
+		api := &API{DB: db, Account: test.Account}
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/players/%s", test.ID), nil)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetParamNames("id")
+		c.SetParamValues(test.ID)
+		// Perform Request
+		if assert.NoError(t, api.getPlayer(c)) {
+			// Assert Status Code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+		}
+		// Assert All Expectations Met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+
+}
+
 func TestGetPlayers(t *testing.T) {
 	// Mock DB
 	db, mock, err := sqlmock.New()

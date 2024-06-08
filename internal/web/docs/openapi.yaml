@@ -370,6 +370,30 @@ paths:
           $ref: "#/components/errors/badRequest"
         401:
           $ref: "#/components/errors/unauthorized"
+    get:
+      tags:
+        - Players
+      summary: Get Player Information
+      description: '
+        Retrieve player information
+        '
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the player to retrieve
+          required: true
+          type: string
+      responses:
+        200:
+          description: Player Information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/players/schema"
+        401:
+          $ref: "#/components/errors/unauthorized"
 
   /positions:
     post:
@@ -501,6 +525,36 @@ components:
               value: {
                 "status": "unauthorized"
                 }
+  players:
+    schema:
+      type: object
+      properties:
+        firstName:
+          description: Player's first name
+          type: string
+          minLength: 3
+          maxLength: 32
+          example: "Michael"
+        lastName:
+          description: Player's last name
+          type: string
+          minLength: 3
+          maxLength: 32
+          example: "duBois"
+        dateOfBirth:
+          description: Player's date of birth
+          type: string
+          example: "1990-08-31"
+        position:
+          description: Player's desired position
+          type: string
+          example: "goalie"
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - position
+
   positions:
     schema:
       type: object

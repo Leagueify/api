@@ -14,6 +14,7 @@ func (api *API) Players(e *echo.Group) {
 	e.GET("/players", api.requiresAuth(api.getPlayers))
 	e.POST("/players", api.requiresAuth(api.createPlayer))
 	e.DELETE("/players/:id", api.requiresAuth(api.deletePlayer))
+	e.GET("/players/:id", api.requiresAuth(api.getPlayer))
 }
 
 func (api *API) createPlayer(c echo.Context) error {
@@ -208,6 +209,49 @@ func (api *API) deletePlayer(c echo.Context) error {
 		}
 	}
 	return c.JSON(http.StatusNoContent, nil)
+}
+
+func (api *API) getPlayer(c echo.Context) error {
+	playerID := c.Param("id")
+	if !util.VerifyToken(playerID) {
+		return c.JSON(http.StatusNotFound,
+			map[string]string{
+				"status": "not found",
+			},
+		)
+	}
+	// Get account players
+	players := api.Account.Players
+	var playerInfo model.Player
+	for _, player := range players {
+		if player == playerID {
+			if err := api.DB.QueryRow(`
+				SELECT * FROM players WHERE id = $1
+			`, playerID).Scan(
+				&playerInfo.ID,
+				&playerInfo.FirstName,
+				&playerInfo.LastName,
+				&playerInfo.DateOfBirth,
+				&playerInfo.Position,
+				&playerInfo.Team,
+				&playerInfo.Division,
+				&playerInfo.IsRegistered,
+			); err != nil {
+				return c.JSON(http.StatusBadRequest,
+					map[string]string{
+						"status": "bad request",
+						"detail": util.HandleError(err),
+					},
+				)
+			}
+			return c.JSON(http.StatusOK, playerInfo)
+		}
+	}
+	return c.JSON(http.StatusNotFound,
+		map[string]string{
+			"status": "not found",
+		},
+	)
 }
 
 func (api *API) getPlayers(c echo.Context) error {
