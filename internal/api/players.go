@@ -158,17 +158,7 @@ func (api *API) deletePlayer(c echo.Context) error {
 		return c.JSON(http.StatusNoContent, nil)
 	}
 	// Get account players
-	var players pq.StringArray
-	if err := api.DB.QueryRow(`
-		SELECT player_ids FROM accounts WHERE id = $1
-	`, api.Account.ID).Scan(&players); err != nil {
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "bad request",
-				"detail": util.HandleError(err),
-			},
-		)
-	}
+	players := api.Account.Players
 	// Delete playerID if in players
 	for playerIndex, player := range players {
 		if player == playerID {
@@ -221,17 +211,7 @@ func (api *API) deletePlayer(c echo.Context) error {
 }
 
 func (api *API) getPlayers(c echo.Context) error {
-	var players pq.StringArray
-	if err := api.DB.QueryRow(`
-		SELECT player_ids FROM accounts WHERE id = $1
-	`, api.Account.ID).Scan(&players); err != nil {
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "bad request",
-				"detail": util.HandleError(err),
-			},
-		)
-	}
+	players := api.Account.Players
 	if len(players) == 0 {
 		return c.JSON(http.StatusNotFound,
 			map[string]string{
