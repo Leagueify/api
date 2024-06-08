@@ -346,6 +346,31 @@ paths:
           $ref: "#/components/errors/badRequest"
         401:
           $ref: "#/components/errors/unauthorized"
+
+  /players/{id}:
+    delete:
+      tags:
+        - Players
+      summary: Delete Player
+      description: '
+        Delete a player from the active account
+        '
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the player to delete
+          required: true
+          type: string
+      responses:
+        204:
+          description: Player(s) Deleted
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
+
   /positions:
     post:
       tags:

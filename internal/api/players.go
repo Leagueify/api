@@ -13,6 +13,7 @@ import (
 func (api *API) Players(e *echo.Group) {
 	e.GET("/players", api.requiresAuth(api.getPlayers))
 	e.POST("/players", api.requiresAuth(api.createPlayer))
+	e.DELETE("/players/:id", api.requiresAuth(api.deletePlayer))
 }
 
 func (api *API) createPlayer(c echo.Context) error {
@@ -149,6 +150,74 @@ func (api *API) createPlayer(c echo.Context) error {
 			"status": "successful",
 		},
 	)
+}
+
+func (api *API) deletePlayer(c echo.Context) error {
+	playerID := c.Param("id")
+	if !util.VerifyToken(playerID) {
+		return c.JSON(http.StatusNoContent, nil)
+	}
+	// Get account players
+	var players pq.StringArray
+	if err := api.DB.QueryRow(`
+		SELECT player_ids FROM accounts WHERE id = $1
+	`, api.Account.ID).Scan(&players); err != nil {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": util.HandleError(err),
+			},
+		)
+	}
+	// Delete playerID if in players
+	for playerIndex, player := range players {
+		if player == playerID {
+			// Begin Transaction
+			tx, err := api.DB.Begin()
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError,
+					map[string]string{
+						"status": "internal server error",
+						"detail": util.HandleError(err),
+					},
+				)
+			}
+			// Delete Player Record
+			if _, err := tx.Exec(`
+				DELETE FROM players WHERE id = $1
+			`, playerID); err != nil {
+				return c.JSON(http.StatusBadRequest,
+					map[string]string{
+						"status": "bad request",
+						"detail": util.HandleError(err),
+					},
+				)
+			}
+			// Remove playerID from account Players
+			players = append(players[:playerIndex], players[playerIndex+1:]...)
+			if _, err := tx.Exec(`
+				UPDATE accounts SET player_ids = $1 WHERE id = $2
+			`, players, api.Account.ID); err != nil {
+				return c.JSON(http.StatusBadRequest,
+					map[string]string{
+						"status": "bad request",
+						"detail": util.HandleError(err),
+					},
+				)
+
+			}
+			// Commit Transaction
+			if err := tx.Commit(); err != nil {
+				return c.JSON(http.StatusBadRequest,
+					map[string]string{
+						"status": "bad request",
+						"detail": util.HandleError(err),
+					},
+				)
+			}
+		}
+	}
+	return c.JSON(http.StatusNoContent, nil)
 }
 
 func (api *API) getPlayers(c echo.Context) error {

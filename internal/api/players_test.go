@@ -217,6 +217,94 @@ func TestCreatePlayer(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	}
 }
+
+func TestDeletePlayer(t *testing.T) {
+	// Mock DB
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
+	}
+	defer db.Close()
+	testCases := []struct {
+		Description        string
+		ID                 string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+	}{
+		{
+			Description:        "Invalid Player ID",
+			ID:                 "ABD1234",
+			ExpectedStatusCode: http.StatusNoContent,
+		},
+		{
+			Description: "Valid Player ID no Player ID in Account",
+			ID:          "QP4RD39CEF",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT player_ids FROM accounts WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{}"))
+			},
+			ExpectedStatusCode: http.StatusNoContent,
+		},
+		{
+			Description: "Valid Player ID not in Account",
+			ID:          "49QRBF09YA",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT player_ids FROM accounts WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{12345ABCDE}"))
+			},
+			ExpectedStatusCode: http.StatusNoContent,
+		},
+		{
+			Description: "Valid Player ID in Account",
+			ID:          "49QRBF09YA",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT player_ids FROM accounts WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{49QRBF09YA}"))
+				mock.ExpectBegin()
+				mock.ExpectExec("DELETE FROM players WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE accounts SET player_ids = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			ExpectedStatusCode: http.StatusNoContent,
+		},
+		{
+			Description: "Valid Player ID in Account with Multiple Player IDs",
+			ID:          "49QRBF09YA",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT player_ids FROM accounts WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{12345ABCDE,49QRBF09YA}"))
+				mock.ExpectBegin()
+				mock.ExpectExec("DELETE FROM players WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE accounts SET player_ids = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			ExpectedStatusCode: http.StatusNoContent,
+		},
+	}
+	// Execute Test Cases
+	for _, test := range testCases {
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// Initialize Echo and the Echo validator
+		e := echo.New()
+		account := &model.Account{
+			ID: "123ABC",
+		}
+		e.Validator = &API{Validator: validator.New()}
+		api := &API{DB: db, Account: account}
+		req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/players/%s", test.ID), nil)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetParamNames("id")
+		c.SetParamValues(test.ID)
+		// Perform Request
+		if assert.NoError(t, api.deletePlayer(c)) {
+			// Assert Status Code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+		}
+		// Assert All Expectations Met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}
+
 func TestGetPlayers(t *testing.T) {
 	// Mock DB
 	db, mock, err := sqlmock.New()
