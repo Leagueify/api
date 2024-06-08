@@ -15,4 +15,8 @@ type (
 	PlayerCreation struct {
 		Players []Player `json:"players" validate:"required"`
 	}
+
+	PlayerRegistration struct {
+		Players []string `json:"players" validate:"required"`
+	}
 )

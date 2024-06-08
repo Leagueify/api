@@ -15,6 +15,7 @@ func (api *API) Players(e *echo.Group) {
 	e.POST("/players", api.requiresAuth(api.createPlayer))
 	e.DELETE("/players/:id", api.requiresAuth(api.deletePlayer))
 	e.GET("/players/:id", api.requiresAuth(api.getPlayer))
+	e.POST("/players/register", api.requiresAuth(api.registerPlayer))
 }
 
 func (api *API) createPlayer(c echo.Context) error {
@@ -283,6 +284,159 @@ func (api *API) getPlayers(c echo.Context) error {
 	return c.JSON(http.StatusOK,
 		map[string]pq.StringArray{
 			"players": players,
+		},
+	)
+}
+
+func (api *API) registerPlayer(c echo.Context) error {
+	payload := model.PlayerRegistration{}
+	// Bind payload to model
+	if err := c.Bind(&payload); err != nil {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": "invalid json payload",
+			},
+		)
+	}
+	// Verify payload against model
+	if err := c.Validate(payload); err != nil {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": util.HandleError(err),
+			},
+		)
+	}
+	// Verify players length
+	if len(payload.Players) < 1 {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": "payload contains no players",
+			},
+		)
+	}
+	// Generate Players to register
+	var registerPlayers pq.StringArray
+	// Begin Transaction
+	tx, err := api.DB.Begin()
+	defer tx.Rollback()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{
+				"status": "internal server error",
+				"detail": util.HandleError(err),
+			},
+		)
+	}
+	// Generate Registration Code
+	updateRegistration := false
+	registrationCode := util.SignedToken(10)
+	if api.Account.RegistrationCode != "" {
+		updateRegistration = true
+		registrationCode = util.ReturnSignedToken(api.Account.RegistrationCode)
+	}
+	storedRegistrationCode := registrationCode[:len(registrationCode)-1]
+	if _, err := tx.Exec(`
+		UPDATE accounts SET registration_code = $1 WHERE id = $2
+	`, storedRegistrationCode, api.Account.ID); err != nil {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": util.HandleError(err),
+			},
+		)
+	}
+	// Add players to registration
+	for _, player := range payload.Players {
+		if !util.VerifyToken(player) {
+			return c.JSON(http.StatusNotFound,
+				map[string]string{
+					"status": "not found",
+				},
+			)
+		}
+		// Update Player ID
+		player = player[:len(player)-1]
+		// Validate player in Account
+		if !util.IsInArray(api.Account.Players, player) {
+			return c.JSON(http.StatusNotFound,
+				map[string]string{
+					"status": "not found",
+				},
+			)
+		}
+		// Add Player to registerPlayers array
+		registerPlayers = append(registerPlayers, player)
+		if _, err := tx.Exec(`
+			UPDATE players SET is_registered = true WHERE id = $1
+		`, player); err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{
+					"status": "internal server error",
+					"detail": util.HandleError(err),
+				},
+			)
+		}
+	}
+	if updateRegistration {
+		var registeredPlayers pq.StringArray
+		if err := tx.QueryRow(`
+				SELECT player_ids FROM registrations WHERE id = $1
+			`, storedRegistrationCode).Scan(&registeredPlayers); err != nil {
+			return c.JSON(http.StatusBadRequest,
+				map[string]string{
+					"status": "bad request",
+					"detail": util.HandleError(err),
+				},
+			)
+		}
+		for _, player := range registerPlayers {
+			if !util.IsInArray(registeredPlayers, player) {
+				registeredPlayers = append(registeredPlayers, player)
+			}
+		}
+		if _, err := tx.Exec(`
+			UPDATE registrations SET player_ids = $1 WHERE id = $2
+		`, registeredPlayers, storedRegistrationCode); err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{
+					"status": "internal server error",
+					"detail": util.HandleError(err),
+				},
+			)
+		}
+	}
+	if !updateRegistration {
+		if _, err := tx.Exec(`
+			INSERT INTO registrations (
+				id, player_ids, amount_due, amount_paid
+			)
+			VALUES (
+				$1, $2, $3, $4
+			)`,
+			storedRegistrationCode, registerPlayers, 0, 0,
+		); err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{
+					"status": "internal server error",
+					"detail": util.HandleError(err),
+				},
+			)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": util.HandleError(err),
+			},
+		)
+	}
+	return c.JSON(http.StatusOK,
+		map[string]string{
+			"status": "successful",
 		},
 	)
 }

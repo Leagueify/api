@@ -13,6 +13,7 @@ func init() {
 	initLeagues()
 	initPlayers()
 	initPositions()
+	initRegistrations()
 	initSports()
 }
 
@@ -40,6 +41,7 @@ func initAccounts() {
 			password TEXT NOT NULL,
 			phone TEXT NOT NULL UNIQUE,
 			date_of_birth TEXT NOT NULL,
+			registration_code TEXT NOT NULL,
 			player_ids TEXT[] NOT NULL,
 			coach BOOLEAN DEFAULT false,
 			volunteer BOOLEAN DEFAULT false,
@@ -105,6 +107,25 @@ func initPositions() {
 		CREATE TABLE IF NOT EXISTS positions (
 			id TEXT PRIMARY KEY,
 			name TEXT UNIQUE NOT NULL
+		)
+	`)
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+}
+
+func initRegistrations() {
+	db, err := Connect()
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+	defer db.Close()
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS registrations (
+			id TEXT PRIMARY KEY,
+			player_ids TEXT[] NOT NULL,
+			amount_due INTEGER NOT NULL,
+			amount_paid INTEGER NOT NULL
 		)
 	`)
 	if err != nil {

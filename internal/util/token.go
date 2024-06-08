@@ -13,9 +13,7 @@ var (
 )
 
 func ReturnSignedToken(token string) string {
-	fmt.Println(token)
 	checksum := getChecksum(calulateChecksum([]byte(token)))
-	fmt.Println(checksum)
 	return fmt.Sprintf("%s%s", token, checksum)
 }
 

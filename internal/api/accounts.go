@@ -92,15 +92,16 @@ func (api *API) createAccount(c echo.Context) (err error) {
 	_, err = api.DB.Exec(`
 		INSERT INTO accounts (
 			id, first_name, last_name, email, password,
-			phone, date_of_birth, player_ids, coach, volunteer,
-			apikey, is_active, is_admin
+			phone, date_of_birth, registration_code, player_ids,
+			coach, volunteer, apikey, is_active, is_admin
 		)
 		VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+			$1, $2, $3, $4, $5, $6, $7,
+			$8, $9, $10, $11, $12, $13, $14
 		)`,
 		account.ID[:len(account.ID)-1], account.FirstName,
 		account.LastName, account.Email, account.Password,
-		account.Phone, account.DateOfBirth, "{}", account.Coach,
+		account.Phone, account.DateOfBirth, "", "{}", account.Coach,
 		account.Volunteer, "", true, is_admin,
 	)
 	if err != nil {

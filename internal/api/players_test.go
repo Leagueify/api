@@ -426,3 +426,151 @@ func TestGetPlayers(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	}
 }
+
+func TestRegisterPlayer(t *testing.T) {
+	// Mock DB
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
+	}
+	defer db.Close()
+	testCases := []struct {
+		Description        string
+		Account            *model.Account
+		RequestBody        string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedContent    string
+		ExpectedStatusCode int
+	}{
+		{
+			Description:        "Invalid Payload",
+			Account:            &model.Account{ID: "123ABC"},
+			RequestBody:        `{`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"invalid json payload"`,
+		},
+		{
+			Description:        "Missing Players",
+			Account:            &model.Account{ID: "123ABC"},
+			RequestBody:        `{}`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"missing required field\(s\): \[Players\]"`,
+		},
+		{
+			Description:        "No Players in payload",
+			Account:            &model.Account{ID: "123ABC"},
+			RequestBody:        `{"players":[]}`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"payload contains no players"`,
+		},
+		{
+			Description: "Invalid Player ID",
+			Account:     &model.Account{ID: "123ABC"},
+			RequestBody: `{"players":["ABD123"]}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE accounts SET registration_code = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectRollback()
+			},
+			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedContent:    `"status":"not found"`,
+		},
+		{
+			Description: "Valid Player ID no Player ID in Account",
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{}},
+			RequestBody: `{"players":["W4SBH35WV8"]}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE accounts SET registration_code = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectRollback()
+			},
+			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedContent:    `"status":"not found"`,
+		},
+		{
+			Description: "Valid Player ID not in Account",
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
+			RequestBody: `{"players":["DW74MSY5XQ"]}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE accounts SET registration_code = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectRollback()
+			},
+			ExpectedStatusCode: http.StatusNotFound,
+			ExpectedContent:    `"status":"not found"`,
+		},
+		{
+			Description: "Valid Player ID in Account",
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"DW74MSY5X"}},
+			RequestBody: `{"players":["DW74MSY5XQ"]}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE accounts SET registration_code = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE players SET is_registered = true WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("INSERT INTO registrations (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			ExpectedStatusCode: http.StatusOK,
+			ExpectedContent:    `"status":"successful"`,
+		},
+		{
+			Description: "Valid Player ID in Account with Multiple Player IDs",
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"W4SBH35WV", "DW74MSY5X"}},
+			RequestBody: `{"players":["DW74MSY5XQ"]}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE accounts SET registration_code = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE players SET is_registered = true WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("INSERT INTO registrations (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			ExpectedStatusCode: http.StatusOK,
+			ExpectedContent:    `"status":"successful"`,
+		},
+		{
+			Description: "Valid Player ID add to Existing Registration",
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"W4SBH35WV", "DW74MSY5X"}, RegistrationCode: "123ABC"},
+			RequestBody: `{"players":["DW74MSY5XQ"]}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE accounts SET registration_code = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE players SET is_registered = true WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectQuery("SELECT player_ids FROM registrations WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{'W4SBH35WV'}"))
+				mock.ExpectExec("UPDATE registrations SET player_ids = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			ExpectedStatusCode: http.StatusOK,
+			ExpectedContent:    `"status":"successful"`,
+		},
+		// TODO: Add more tests
+	}
+	// Execute Test Cases
+	for _, test := range testCases {
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// Initialize Echo and the Echo validator
+		e := echo.New()
+		e.Validator = &API{Validator: validator.New()}
+		api := &API{DB: db, Account: test.Account}
+		reqBody := []byte(test.RequestBody)
+		req := httptest.NewRequest(http.MethodPost, "/api/players/register", bytes.NewBuffer(reqBody))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		// Perform Request
+		if assert.NoError(t, api.registerPlayer(c)) {
+			// Assert Status Code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+			// Validate Response Body
+			match, err := regexp.MatchString(test.ExpectedContent, rec.Body.String())
+			assert.NoError(t, err)
+			assert.True(t, match, fmt.Sprintf("%v: Expected %v but received %v",
+				test.Description, test.ExpectedContent, rec.Body.String(),
+			))
+
+		}
+		// Assert All Expectations Met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}

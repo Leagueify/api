@@ -6,19 +6,20 @@ import (
 
 type (
 	Account struct {
-		ID          string
-		FirstName   string
-		LastName    string
-		Email       string
-		Password    string
-		Phone       string
-		DateOfBirth string
-		Players     pq.StringArray
-		Coach       bool
-		Volunteer   bool
-		APIKey      string
-		IsActive    bool
-		IsAdmin     bool
+		ID               string
+		FirstName        string
+		LastName         string
+		Email            string
+		Password         string
+		Phone            string
+		DateOfBirth      string
+		RegistrationCode string
+		Players          pq.StringArray
+		Coach            bool
+		Volunteer        bool
+		APIKey           string
+		IsActive         bool
+		IsAdmin          bool
 	}
 
 	AccountCreation struct {
