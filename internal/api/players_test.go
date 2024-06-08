@@ -248,13 +248,13 @@ func TestDeletePlayer(t *testing.T) {
 		{
 			Description:        "Valid Player ID not in Account",
 			ID:                 "49QRBF09YA",
-			Account:            &model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CEF"}},
+			Account:            &model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CE"}},
 			ExpectedStatusCode: http.StatusNoContent,
 		},
 		{
 			Description: "Valid Player ID in Account",
 			ID:          "49QRBF09YA",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09YA"}},
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec("DELETE FROM players WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -266,7 +266,7 @@ func TestDeletePlayer(t *testing.T) {
 		{
 			Description: "Valid Player ID in Account with Multiple Player IDs",
 			ID:          "49QRBF09YA",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCDE", "49QRBF09YA"}},
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCD", "49QRBF09Y"}},
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec("DELETE FROM players WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -330,13 +330,13 @@ func TestGetPlayer(t *testing.T) {
 		{
 			Description:        "Valid Player ID not in Account",
 			ID:                 "49QRBF09YA",
-			Account:            &model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CEF"}},
+			Account:            &model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CE"}},
 			ExpectedStatusCode: http.StatusNotFound,
 		},
 		{
 			Description: "Valid Player ID in Account",
 			ID:          "49QRBF09YA",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09YA"}},
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT \\* FROM players WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "date_of_birth", "position", "team", "division", "is_registered"}).AddRow("49QRBF09YA", "Leagueify", "Test", "1990-08-31", "goalie", "", "", false))
 			},
@@ -345,7 +345,7 @@ func TestGetPlayer(t *testing.T) {
 		{
 			Description: "Valid Player ID in Account with Multiple Player IDs",
 			ID:          "49QRBF09YA",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCDE", "49QRBF09YA"}},
+			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCD", "49QRBF09Y"}},
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT \\* FROM players WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "date_of_birth", "position", "team", "division", "is_registered"}).AddRow("49QRBF09YA", "Leagueify", "Test", "1990-08-31", "goalie", "", "", false))
 			},

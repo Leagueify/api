@@ -158,6 +158,8 @@ func (api *API) deletePlayer(c echo.Context) error {
 	if !util.VerifyToken(playerID) {
 		return c.JSON(http.StatusNoContent, nil)
 	}
+	// Remove checksum from playerID
+	playerID = playerID[:len(playerID)-1]
 	// Get account players
 	players := api.Account.Players
 	// Delete playerID if in players
@@ -220,6 +222,8 @@ func (api *API) getPlayer(c echo.Context) error {
 			},
 		)
 	}
+	// Remove checksum from playerID
+	playerID = playerID[:len(playerID)-1]
 	// Get account players
 	players := api.Account.Players
 	var playerInfo model.Player
@@ -244,6 +248,7 @@ func (api *API) getPlayer(c echo.Context) error {
 					},
 				)
 			}
+			playerInfo.ID = util.ReturnSignedToken(playerInfo.ID)
 			return c.JSON(http.StatusOK, playerInfo)
 		}
 	}
@@ -262,6 +267,9 @@ func (api *API) getPlayers(c echo.Context) error {
 				"status": "not found",
 			},
 		)
+	}
+	for index, player := range players {
+		players[index] = util.ReturnSignedToken(player)
 	}
 	return c.JSON(http.StatusOK,
 		map[string]pq.StringArray{
