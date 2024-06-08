@@ -7,9 +7,11 @@ import (
 	"github.com/Leagueify/api/internal/util"
 	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 )
 
 func (api *API) Players(e *echo.Group) {
+	e.GET("/players", api.requiresAuth(api.getPlayers))
 	e.POST("/players", api.requiresAuth(api.createPlayer))
 }
 
@@ -145,6 +147,32 @@ func (api *API) createPlayer(c echo.Context) error {
 	return c.JSON(http.StatusOK,
 		map[string]string{
 			"status": "successful",
+		},
+	)
+}
+
+func (api *API) getPlayers(c echo.Context) error {
+	var players pq.StringArray
+	if err := api.DB.QueryRow(`
+		SELECT player_ids FROM accounts WHERE id = $1
+	`, api.Account.ID).Scan(&players); err != nil {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": util.HandleError(err),
+			},
+		)
+	}
+	if len(players) == 0 {
+		return c.JSON(http.StatusNotFound,
+			map[string]string{
+				"status": "not found",
+			},
+		)
+	}
+	return c.JSON(http.StatusOK,
+		map[string]pq.StringArray{
+			"players": players,
 		},
 	)
 }

@@ -278,6 +278,40 @@ paths:
           $ref: "#/components/errors/unauthorized"
 
   /players:
+    get:
+      tags:
+        - Players
+      summary: Get All Players
+      description: '
+        Get all players for the active account
+        '
+      security:
+        - apiKey: []
+      responses:
+        200:
+          description: Registered Player IDs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  players:
+                    description: List of player IDs on the active account
+                    type: array
+                    items:
+                      description: Player ID
+                      type: string
+              examples:
+                accountPlayers:
+                  summary: Player IDs on active account
+                  value: {
+                    "players": [
+                        "6G37TEN",
+                        "123ABCD"
+                      ]
+                    }
+        401:
+          $ref: "#/components/errors/unauthorized"
     post:
       tags:
         - Players

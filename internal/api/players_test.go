@@ -217,3 +217,55 @@ func TestCreatePlayer(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	}
 }
+func TestGetPlayers(t *testing.T) {
+	// Mock DB
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
+	}
+	defer db.Close()
+	testCases := []struct {
+		Description        string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+	}{
+		{
+			Description:        "No Results",
+			Mock:               func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT player_ids FROM accounts WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{}"))
+			},
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+		{
+			Description:        "Result Found",
+			Mock:               func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT player_ids FROM accounts WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{12345ABCDE}"))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+	}
+	// Execute Test Cases
+	for _, test := range testCases {
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// Initialize Echo and the Echo validator
+		e := echo.New()
+		account := &model.Account{
+			ID: "123ABC",
+		}
+		e.Validator = &API{Validator: validator.New()}
+		api := &API{DB: db, Account: account}
+		req := httptest.NewRequest(http.MethodGet, "/api/players", nil)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		// Perform Request
+		if assert.NoError(t, api.getPlayers(c)) {
+			// Assert Status Code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+		}
+		// Assert All Expectations Met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}
