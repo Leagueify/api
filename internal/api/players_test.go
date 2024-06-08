@@ -230,15 +230,15 @@ func TestGetPlayers(t *testing.T) {
 		ExpectedStatusCode int
 	}{
 		{
-			Description:        "No Results",
-			Mock:               func(mock sqlmock.Sqlmock) {
+			Description: "No Results",
+			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT player_ids FROM accounts WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{}"))
 			},
 			ExpectedStatusCode: http.StatusNotFound,
 		},
 		{
-			Description:        "Result Found",
-			Mock:               func(mock sqlmock.Sqlmock) {
+			Description: "Result Found",
+			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT player_ids FROM accounts WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"player_ids"}).AddRow("{12345ABCDE}"))
 			},
 			ExpectedStatusCode: http.StatusOK,
