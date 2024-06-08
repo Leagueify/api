@@ -38,6 +38,15 @@ func (api *API) createPlayer(c echo.Context) error {
 			},
 		)
 	}
+	// Verify players length
+	if len(payload.Players) < 1 {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": "payload contains no players",
+			},
+		)
+	}
 	// Retrieve league positions
 	var leaguePositions []string
 	rows, err := api.DB.Query(`

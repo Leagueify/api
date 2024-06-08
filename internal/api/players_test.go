@@ -43,6 +43,12 @@ func TestCreatePlayer(t *testing.T) {
 			ExpectedContent:    `"detail":"missing required field\(s\): \[Players\]"`,
 		},
 		{
+			Description:        "No Players in Payload",
+			RequestBody:        `{"players":[]}`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"payload contains no players"`,
+		},
+		{
 			Description: "Single Player Missing FirstName",
 			RequestBody: `{"players":[{"lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
