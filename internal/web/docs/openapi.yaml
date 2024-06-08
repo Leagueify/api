@@ -277,6 +277,41 @@ paths:
         401:
           $ref: "#/components/errors/unauthorized"
 
+  /players:
+    post:
+      tags:
+        - Players
+      summary: Create Player(s)
+      description: '
+        Create one or more players for the active account
+        '
+      security:
+        - apiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                players:
+                  description: List of Players to create
+                  type: array
+                  items:
+                    $ref: "#/components/players/schema"
+      responses:
+        201:
+          description: Player(s) Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/successful/schema"
+              examples:
+                playersCreated:
+                  $ref: "#/components/successful/example"
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
   /positions:
     post:
       tags:
