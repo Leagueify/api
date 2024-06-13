@@ -15,7 +15,6 @@ import (
 type API struct {
 	Account   model.Account
 	DB        database.Database
-	TX        database.Database
 	Validator *validator.Validate
 }
 
