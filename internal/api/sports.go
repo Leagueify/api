@@ -3,55 +3,21 @@ package api
 import (
 	"net/http"
 
-	"github.com/getsentry/sentry-go"
+	"github.com/Leagueify/api/internal/util"
 	"github.com/labstack/echo/v4"
 )
-
-type sport struct {
-	ID   string
-	Name string
-}
 
 func (api *API) Sports(e *echo.Group) {
 	e.GET("/sports", api.requiresAuth(api.listSports))
 }
 
 func (api *API) listSports(c echo.Context) (err error) {
-	sports := []sport{}
-	rows, err := api.DB.Query(
-		`SELECT * FROM sports`,
-	)
+	sports, err := api.DB.GetSports()
 	if err != nil {
-		sentry.CaptureException(err)
-		return c.JSON(http.StatusBadGateway,
-			map[string]string{
-				"status": "bad gateway",
-			},
-		)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var sport sport
-		if err := rows.Scan(
-			&sport.ID,
-			&sport.Name,
-		); err != nil {
-			sentry.CaptureException(err)
-			return c.JSON(http.StatusBadGateway,
-				map[string]string{
-					"status": "bad gateway",
-				},
-			)
-		}
-		sports = append(sports, sport)
+		return util.SendStatus(http.StatusInternalServerError, c, "")
 	}
 	if len(sports) < 1 {
-		sentry.CaptureMessage("No rows returned in Sports table")
-		return c.JSON(http.StatusNotFound,
-			map[string]string{
-				"status": "not found",
-			},
-		)
+		return util.SendStatus(http.StatusNotFound, c, "")
 	}
 	return c.JSON(http.StatusOK, sports)
 }

@@ -22,42 +22,23 @@ func (api *API) createPosition(c echo.Context) (err error) {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 	if len(positions.Positions) <= 0 {
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "bad request",
-			},
-		)
+		return util.SendStatus(http.StatusBadRequest, c, "")
 	}
+
 	// Check for existing positions
-	var existingPositions model.Position
-	if err := api.DB.QueryRow(`SELECT id FROM positions`).Scan(
-		&existingPositions.ID,
-	); err == nil {
-		return c.JSON(http.StatusUnauthorized,
-			map[string]string{
-				"status": "unauthorized",
-			},
-		)
+	totalPositions, err := api.DB.GetTotalPositions()
+	if err != nil {
+		return util.SendStatus(http.StatusUnauthorized, c, "")
 	}
+	if totalPositions > 0 {
+		return util.SendStatus(http.StatusUnauthorized, c, "")
+	}
+
 	// Create Positions
-	for _, position := range positions.Positions {
-		_, err := api.DB.Exec(`
-			INSERT INTO positions (
-				id, name
-			)
-			VALUES ($1, $2)
-		`,
-			util.UnsignedToken(6), position,
-		)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest,
-				map[string]string{
-					"status": "bad request",
-					"detail": util.HandleError(err),
-				},
-			)
-		}
+	if err := api.DB.CreatePositions(*positions); err != nil {
+		return util.SendStatus(http.StatusBadRequest, c, util.HandleError(err))
 	}
+
 	return c.JSON(http.StatusCreated,
 		map[string]string{
 			"status": "successful",
@@ -66,41 +47,14 @@ func (api *API) createPosition(c echo.Context) (err error) {
 }
 
 func (api *API) listPositions(c echo.Context) (err error) {
-	positions := []model.Position{}
-	rows, err := api.DB.Query(
-		`SELECT * FROM positions`,
-	)
+	positions, err := api.DB.GetAllPositions()
 	if err != nil {
-		sentry.CaptureException(err)
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "bad request",
-			},
-		)
+		return util.SendStatus(http.StatusBadRequest, c, "")
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var position model.Position
-		if err := rows.Scan(
-			&position.ID,
-			&position.Name,
-		); err != nil {
-			sentry.CaptureException(err)
-			return c.JSON(http.StatusBadRequest,
-				map[string]string{
-					"status": "bad request",
-				},
-			)
-		}
-		positions = append(positions, position)
-	}
+
 	if len(positions) < 1 {
-		sentry.CaptureMessage("No rows returned in Positions table")
-		return c.JSON(http.StatusNotFound,
-			map[string]string{
-				"status": "not found",
-			},
-		)
+		return util.SendStatus(http.StatusNotFound, c, "")
 	}
+
 	return c.JSON(http.StatusOK, positions)
 }

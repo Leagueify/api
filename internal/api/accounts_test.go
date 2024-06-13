@@ -11,6 +11,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Leagueify/api/internal/auth"
+	"github.com/Leagueify/api/internal/database/postgres"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -19,11 +20,11 @@ import (
 
 func TestCreateAccount(t *testing.T) {
 	// Create Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("ERROR: '%s' was not expected when creating mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		RequestBody        string
@@ -206,11 +207,11 @@ func TestCreateAccount(t *testing.T) {
 
 func TestLoginAccount(t *testing.T) {
 	// Create Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("ERROR: '%s' was not expected when creating mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	// Setup Password
 	validPassword := "Test123!"
 	if err := auth.HashPassword(&validPassword); err != nil {
@@ -231,8 +232,8 @@ func TestLoginAccount(t *testing.T) {
 			Description: "Valid Account Credentials",
 			RequestBody: `{"email":"test@leagueify.org","password":"Test123!"}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT password, is_active FROM accounts WHERE email = (.+) AND is_active = true").WillReturnRows(sqlmock.NewRows([]string{"password", "is_active"}).AddRow(&validPassword, true))
-				mock.ExpectExec("UPDATE accounts SET apikey = (.+) WHERE email = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectQuery("SELECT \\* FROM accounts WHERE email = (.+)$").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "email", "password", "phone", "date_of_birth", "registration_code", "players", "coach", "volunteer", "apikey", "is_active", "is_admin"}).AddRow("TEST1234", "Leagueify", "Test", "test@leagieuify.org", &validPassword, "+12085551234", "1990-08-31", "", pq.StringArray{}, false, false, "", true, false))
+				mock.ExpectExec("UPDATE accounts SET apikey = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			ExpectedStatusCode: http.StatusOK,
 		},
@@ -240,7 +241,7 @@ func TestLoginAccount(t *testing.T) {
 			Description: "Valid Credentials Inactive Account",
 			RequestBody: `{}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT password, is_active FROM accounts WHERE email = (.+) AND is_active = true$").WillReturnRows(sqlmock.NewRows([]string{"password", "is_active"}).AddRow("Test123!", false))
+				mock.ExpectQuery("SELECT \\* FROM accounts WHERE email = (.+)$").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "email", "password", "phone", "date_of_birth", "registration_code", "players", "coach", "volunteer", "apikey", "is_active", "is_admin"}).AddRow("TEST1234", "Leagueify", "Test", "test@leagieuify.org", &validPassword, "+12085551234", "1990-08-31", "", pq.StringArray{}, false, false, "", true, false))
 			},
 			ExpectedStatusCode: http.StatusUnauthorized,
 		},
@@ -248,7 +249,7 @@ func TestLoginAccount(t *testing.T) {
 			Description: "Invalid Account Credentials - Incorrect Password",
 			RequestBody: `{}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT password, is_active FROM accounts WHERE email = (.+) AND is_active = true$").WillReturnRows(sqlmock.NewRows([]string{"password", "is_active"}).AddRow("Pass123!", true))
+				mock.ExpectQuery("SELECT \\* FROM accounts WHERE email = (.+)$").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "email", "password", "phone", "date_of_birth", "registration_code", "players", "coach", "volunteer", "apikey", "is_active", "is_admin"}).AddRow("TEST1234", "Leagueify", "Test", "test@leagieuify.org", &validPassword, "+12085551234", "1990-08-31", "", pq.StringArray{}, false, false, "", true, false))
 			},
 			ExpectedStatusCode: http.StatusUnauthorized,
 		},
@@ -256,7 +257,7 @@ func TestLoginAccount(t *testing.T) {
 			Description: "Invalid Account Credentials - Incorrect Email",
 			RequestBody: `{}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT password, is_active FROM accounts WHERE email = (.+) AND is_active = true$").WillReturnRows(sqlmock.NewRows([]string{"password", "is_active"}))
+				mock.ExpectQuery("SELECT \\* FROM accounts WHERE email = (.+)$").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "email", "password", "phone", "date_of_birth", "registration_code", "players", "coach", "volunteer", "apikey", "is_active", "is_admin"}).AddRow("TEST1234", "Leagueify", "Test", "test@leagieuify.org", &validPassword, "+12085551234", "1990-08-31", "", pq.StringArray{}, false, false, "", true, false))
 			},
 			ExpectedStatusCode: http.StatusUnauthorized,
 		},
@@ -288,30 +289,22 @@ func TestLoginAccount(t *testing.T) {
 
 func TestLogoutAccount(t *testing.T) {
 	// Create Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("ERROR: '%s' was not expected when creating mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		Mock               func(mock sqlmock.Sqlmock)
 		ExpectedStatusCode int
 	}{
 		{
-			Description: "Valid API Key",
+			Description: "Account Logout",
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT email, apikey FROM accounts WHERE apikey = (.+)").WillReturnRows(sqlmock.NewRows([]string{"email", "apikey"}).AddRow("test@leagueify.org", "1234"))
-				mock.ExpectExec("UPDATE accounts SET apikey = '' WHERE email = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE accounts SET apikey = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			ExpectedStatusCode: http.StatusOK,
-		},
-		{
-			Description: "Invalid API Key",
-			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT email, apikey FROM accounts WHERE apikey = (.+)").WillReturnRows(sqlmock.NewRows([]string{"email", "apikey"}))
-			},
-			ExpectedStatusCode: http.StatusUnauthorized,
 		},
 	}
 	// Execute Test Cases
@@ -340,11 +333,11 @@ func TestLogoutAccount(t *testing.T) {
 
 func TestVerifyAccount(t *testing.T) {
 	// Create Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("ERROR: '%s' was not expected when creating mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		ID                 string
@@ -356,7 +349,7 @@ func TestVerifyAccount(t *testing.T) {
 			Description: "Valid Account ID",
 			ID:          "ERCXNX57",
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("^UPDATE accounts SET is_active = true, apikey = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("^UPDATE accounts SET apikey = (.+), is_active = true WHERE id = (.+) AND is_active = false$").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedContent:    `"apikey":"(.+)"`,
@@ -371,7 +364,7 @@ func TestVerifyAccount(t *testing.T) {
 			Description: "Account ID not in Database",
 			ID:          "ERCXNX57",
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("UPDATE accounts SET is_active = true, apikey = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectExec("UPDATE accounts SET apikey = (.+), is_active = true WHERE id = (.+) AND is_active = false$").WillReturnResult(sqlmock.NewResult(0, 0))
 			},
 			ExpectedStatusCode: http.StatusUnauthorized,
 			ExpectedContent:    `"status":"unauthorized"`,

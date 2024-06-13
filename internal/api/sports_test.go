@@ -6,17 +6,18 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/Leagueify/api/internal/database/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestListSports(t *testing.T) {
 	// Create Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("ERROR: '%s' was not expected when creating mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		Mock               func(mock sqlmock.Sqlmock)

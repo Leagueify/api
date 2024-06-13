@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/Leagueify/api/internal/database/postgres"
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
 	"github.com/go-playground/validator/v10"
@@ -19,11 +20,11 @@ import (
 
 func TestCreatePosition(t *testing.T) {
 	// Create Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error: '%s' was not expected when creating mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		RequestBody        string
@@ -41,7 +42,10 @@ func TestCreatePosition(t *testing.T) {
 			Description: "Valid Request Body - Single Position",
 			RequestBody: `{"positions": ["skater"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM positions").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO positions (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
 			},
 			ExpectedStatusCode: http.StatusCreated,
 			ExpectedContent:    `"status":"successful"`,
@@ -50,8 +54,11 @@ func TestCreatePosition(t *testing.T) {
 			Description: "Valid Request Body - Multiple Position",
 			RequestBody: `{"positions": ["skater", "goalie"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM positions").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO positions (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectExec("INSERT INTO positions (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(2, 1))
+				mock.ExpectCommit()
 			},
 			ExpectedStatusCode: http.StatusCreated,
 			ExpectedContent:    `"status":"successful"`,
@@ -60,8 +67,11 @@ func TestCreatePosition(t *testing.T) {
 			Description: "Valid Request Body - Duplicate Position",
 			RequestBody: `{"positions": ["skater", "skater"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM positions").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO positions (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectExec("INSERT INTO positions (.+) VALUES (.+)$").WillReturnError(&pq.Error{Code: "23505", Constraint: "positions_name_key"})
+				mock.ExpectRollback()
 			},
 			ExpectedStatusCode: http.StatusBadRequest,
 			ExpectedContent:    `"detail":"name already in use"`,
@@ -77,7 +87,7 @@ func TestCreatePosition(t *testing.T) {
 		e := echo.New()
 		e.Validator = &API{Validator: validator.New()}
 		api := API{DB: db}
-		api.Account = &model.Account{}
+		api.Account = model.Account{}
 		api.Account.ID = util.SignedToken(8)
 		reqBody := []byte(test.RequestBody)
 		req := httptest.NewRequest(http.MethodPost, "/api/positions", bytes.NewBuffer(reqBody))
@@ -102,11 +112,11 @@ func TestCreatePosition(t *testing.T) {
 
 func TestListPositions(t *testing.T) {
 	// Create Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error: '%s' was not expected when creating mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		Mock               func(mock sqlmock.Sqlmock)

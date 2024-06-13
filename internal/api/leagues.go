@@ -15,57 +15,32 @@ func (api *API) Leagues(e *echo.Group) {
 
 func (api *API) createLeague(c echo.Context) error {
 	league := model.LeagueCreation{}
-	// Bind payload to league model
+	// bind payload to league model
 	if err := c.Bind(&league); err != nil {
 		sentry.CaptureException(err)
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "bad request",
-				"detail": "invalid json payload",
-			},
-		)
+		return util.SendStatus(http.StatusBadRequest, c, "invalid json payload")
 	}
-	// Validate payload against model
+
+	// validate payload against model
 	if err := c.Validate(league); err != nil {
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "bad request",
-				"detail": util.HandleError(err),
-			},
-		)
+		return util.SendStatus(http.StatusBadRequest, c, util.HandleError(err))
 	}
-	// Check for Existing League
-	var existingLeague model.LeagueCreation
-	if err := api.DB.QueryRow(`SELECT id FROM leagues`).Scan(
-		&existingLeague.ID,
-	); err == nil {
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "unauthorized",
-			},
-		)
+
+	// check for existing league
+	leagues, err := api.DB.GetTotalLeagues()
+	if err != nil {
+		return util.SendStatus(http.StatusUnauthorized, c, "")
 	}
+	if leagues > 0 {
+		return util.SendStatus(http.StatusUnauthorized, c, "")
+	}
+
 	// Set league.ID overriding provided ID
 	league.ID = util.SignedToken(6)
 	league.MasterAdmin = api.Account.ID
 	// Insert league into database
-	_, err := api.DB.Exec(`
-		INSERT INTO leagues (
-			id, name, sport_id, master_admin
-		)
-		VALUES (
-			$1, $2, $3, $4
-		)`,
-		league.ID[:len(league.ID)-1], league.Name,
-		league.SportID, league.MasterAdmin,
-	)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest,
-			map[string]string{
-				"status": "bad request",
-				"detail": util.HandleError(err),
-			},
-		)
+	if err := api.DB.CreateLeague(league); err != nil {
+		return util.SendStatus(http.StatusUnauthorized, c, "")
 	}
 	// Successful League Creation
 	return c.JSON(http.StatusCreated,

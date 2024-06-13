@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/Leagueify/api/internal/database"
@@ -14,89 +13,53 @@ import (
 )
 
 type API struct {
-	Account   *model.Account
-	DB        *sql.DB
+	Account   model.Account
+	DB        database.Database
+	TX        database.Database
 	Validator *validator.Validate
 }
 
 func (api *API) requiresAdmin(f func(echo.Context) error) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		account := model.Account{}
+		var err error
+
 		apikey := c.Request().Header.Get("apiKey")
 		if !util.VerifyToken(apikey) {
-			return c.JSON(http.StatusUnauthorized,
-				map[string]string{
-					"status": "unauthorized",
-				},
-			)
+			return util.SendStatus(http.StatusUnauthorized, c, "")
 		}
-		err := api.DB.QueryRow(`
-			SELECT * FROM accounts where apikey = $1 AND is_active = true AND is_admin = true
-		`, apikey[:len(apikey)-1]).Scan(
-			&account.ID,
-			&account.FirstName,
-			&account.LastName,
-			&account.Email,
-			&account.Password,
-			&account.Phone,
-			&account.DateOfBirth,
-			&account.RegistrationCode,
-			&account.Players,
-			&account.Coach,
-			&account.Volunteer,
-			&account.APIKey,
-			&account.IsActive,
-			&account.IsAdmin,
-		)
-		api.Account = &account
+
+		api.Account, err = api.DB.GetAccountByAPIKey(apikey)
 		if err != nil {
-			return c.JSON(http.StatusUnauthorized,
-				map[string]string{
-					"status": "unauthorized",
-				},
-			)
+			return util.SendStatus(http.StatusUnauthorized, c, "")
 		}
+		if !api.Account.IsActive {
+			return util.SendStatus(http.StatusUnauthorized, c, "")
+		}
+		if !api.Account.IsAdmin {
+			return util.SendStatus(http.StatusUnauthorized, c, "")
+		}
+
 		return f(c)
 	}
 }
 
 func (api *API) requiresAuth(f func(echo.Context) error) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		account := model.Account{}
+		var err error
+
 		apikey := c.Request().Header.Get("apiKey")
 		if !util.VerifyToken(apikey) {
-			return c.JSON(http.StatusUnauthorized,
-				map[string]string{
-					"status": "unauthorized",
-				},
-			)
+			return util.SendStatus(http.StatusUnauthorized, c, "")
 		}
-		err := api.DB.QueryRow(`
-			SELECT * FROM accounts where apikey = $1 AND is_active = true
-		`, apikey[:len(apikey)-1]).Scan(
-			&account.ID,
-			&account.FirstName,
-			&account.LastName,
-			&account.Email,
-			&account.Password,
-			&account.Phone,
-			&account.DateOfBirth,
-			&account.RegistrationCode,
-			&account.Players,
-			&account.Coach,
-			&account.Volunteer,
-			&account.APIKey,
-			&account.IsActive,
-			&account.IsAdmin,
-		)
-		api.Account = &account
+
+		api.Account, err = api.DB.GetAccountByAPIKey(apikey)
 		if err != nil {
-			return c.JSON(http.StatusUnauthorized,
-				map[string]string{
-					"status": "unauthorized",
-				},
-			)
+			return util.SendStatus(http.StatusUnauthorized, c, "")
 		}
+		if !api.Account.IsActive {
+			return util.SendStatus(http.StatusUnauthorized, c, "")
+		}
+
 		return f(c)
 	}
 }
@@ -109,7 +72,7 @@ func (api *API) Validate(i interface{}) error {
 }
 
 func Routes(e *echo.Echo) {
-	db, err := database.Connect()
+	db, err := database.GetDatabase()
 	if err != nil {
 		sentry.CaptureException(err)
 	}
