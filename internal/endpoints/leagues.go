@@ -5,7 +5,6 @@ import (
 
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
-	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 )
 
@@ -17,7 +16,6 @@ func (api *API) createLeague(c echo.Context) error {
 	league := model.LeagueCreation{}
 	// bind payload to league model
 	if err := c.Bind(&league); err != nil {
-		sentry.CaptureException(err)
 		return util.SendStatus(http.StatusBadRequest, c, "invalid json payload")
 	}
 

@@ -5,7 +5,6 @@ import (
 
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
-	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 )
 
@@ -18,8 +17,7 @@ func (api *API) createPosition(c echo.Context) (err error) {
 	positions := &model.PositionCreation{}
 	// Bind payload to positions model
 	if err := c.Bind(&positions); err != nil {
-		sentry.CaptureException(err)
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return util.SendStatus(http.StatusBadRequest, c, "invalid json payload")
 	}
 	if len(positions.Positions) <= 0 {
 		return util.SendStatus(http.StatusBadRequest, c, "")

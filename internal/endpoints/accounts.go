@@ -7,7 +7,6 @@ import (
 	"github.com/Leagueify/api/internal/auth"
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
-	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 )
 
@@ -22,7 +21,6 @@ func (api *API) createAccount(c echo.Context) (err error) {
 	account := model.AccountCreation{}
 	// Bind payload to account model
 	if err := c.Bind(&account); err != nil {
-		sentry.CaptureException(err)
 		return util.SendStatus(http.StatusBadRequest, c, "invalid json payload")
 	}
 	// Validate payload against model
@@ -33,8 +31,7 @@ func (api *API) createAccount(c echo.Context) (err error) {
 	today := time.Now().Format(time.DateOnly)
 	age, err := util.CalculateAge(account.DateOfBirth, today)
 	if err != nil {
-		// TODO: Update to use util.HandleError
-		return util.SendStatus(http.StatusBadRequest, c, err.Error())
+		return util.SendStatus(http.StatusBadRequest, c, util.HandleError(err))
 	}
 	if age < 18 {
 		return util.SendStatus(http.StatusBadRequest, c, "must be 18 or older to create an account")
@@ -43,8 +40,6 @@ func (api *API) createAccount(c echo.Context) (err error) {
 	account.ID = util.SignedToken(8)
 	// Hash Password
 	if err := auth.HashPassword(&account.Password); err != nil {
-		sentry.CaptureException(err)
-		// TODO: Update to use util.HandleError
 		return util.SendStatus(http.StatusBadRequest, c, err.Error())
 	}
 	// Check for existing accounts
@@ -79,7 +74,7 @@ func (api *API) createAccount(c echo.Context) (err error) {
 func (api *API) loginAccount(c echo.Context) error {
 	credentials := &model.AccountLogin{}
 	if err := c.Bind(&credentials); err != nil {
-		return util.SendStatus(http.StatusBadRequest, c, "")
+		return util.SendStatus(http.StatusBadRequest, c, "invalid json payload")
 	}
 	account, err := api.DB.GetAccountByEmail(credentials.Email)
 	if err != nil {
