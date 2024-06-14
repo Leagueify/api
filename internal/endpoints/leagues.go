@@ -43,13 +43,12 @@ func (api *API) createLeague(c echo.Context) error {
 	league.MasterAdmin = api.Account.ID
 	// Insert league into database
 	if err := api.DB.CreateLeague(league); err != nil {
-		return util.SendStatus(http.StatusUnauthorized, c, "")
+		return util.SendStatus(http.StatusBadRequest, c, util.HandleError(err))
 	}
 	// Successful League Creation
 	return c.JSON(http.StatusCreated,
 		map[string]string{
 			"message": "successful",
-			"detail":  league.ID,
 		},
 	)
 }
