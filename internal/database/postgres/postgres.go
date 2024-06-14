@@ -77,6 +77,23 @@ func (p Postgres) InitializeDatabase() error {
 		return err
 	}
 
+	// create email table
+	if _, err := tx.Exec(`
+		CREATE TABLE IF NOT EXISTS email (
+			id TEXT PRIMARY KEY,
+			email TEXT NOT NULL UNIQUE,
+			smtp_host TEXT NOT NULL,
+			smtp_port INTEGER NOT NULL,
+			smtp_user TEXT NOT NULL,
+			smtp_pass TEXT NOT NULL,
+			is_active BOOLEAN DEFAULT false,
+			has_error BOOLEAN DEFAULT true
+		)
+	`); err != nil {
+		sentry.CaptureException(err)
+		return err
+	}
+
 	// create leagues table
 	_, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS leagues (

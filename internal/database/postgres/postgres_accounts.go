@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/Leagueify/api/internal/model"
-	"github.com/getsentry/sentry-go"
 	"github.com/lib/pq"
 )
 
@@ -43,7 +42,7 @@ func (p Postgres) CreateAccount(account model.AccountCreation) error {
 		account.ID[:len(account.ID)-1], account.FirstName,
 		account.LastName, account.Email, account.Password,
 		account.Phone, account.DateOfBirth, "", "{}", account.Coach,
-		account.Volunteer, "", true, account.IsAdmin,
+		account.Volunteer, "", account.IsActive, account.IsAdmin,
 	); err != nil {
 		return err
 	}
@@ -72,7 +71,6 @@ func (p Postgres) GetAccountByAPIKey(apikey string) (model.Account, error) {
 		&account.IsActive,
 		&account.IsAdmin,
 	); err != nil {
-		sentry.CaptureException(err)
 		return account, err
 	}
 

@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"net/textproto"
 	"reflect"
 	"strings"
 
@@ -13,6 +14,8 @@ func HandleError(err error) string {
 	switch errType := err.(type) {
 	case *pq.Error:
 		return postgresErrors(errType)
+	case *textproto.Error:
+		return textprotoErrors(errType)
 	case validator.ValidationErrors:
 		return validationErrors(errType)
 	default:
@@ -26,6 +29,15 @@ func postgresErrors(err *pq.Error) string {
 		return fmt.Sprintf("%v already in use", key)
 	}
 	return err.Code.Name()
+}
+
+func textprotoErrors(err *textproto.Error) string {
+	switch err.Code {
+	case 535:
+		return "credential authentication failure"
+	default:
+		return fmt.Sprintf("Unknown Error Code: '%v'", err.Code)
+	}
 }
 
 func validationErrors(validationErrors validator.ValidationErrors) string {

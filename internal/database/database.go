@@ -21,6 +21,9 @@ type Database interface {
 	SetPlayerIDs(playerIDs *pq.StringArray, accountID string, tx *sql.Tx) error
 	SetRegistrationCode(tx *sql.Tx, code, accountID string) error
 	UnsetAPIKey(accountID string) error
+	// email functions
+	CreateEmailConfig(emailConfig model.EmailConfig) error
+	GetTotalEmailConfigs() (int, error)
 	// league functions
 	CreateLeague(league model.LeagueCreation) error
 	GetTotalLeagues() (int, error)
