@@ -65,7 +65,7 @@ func TestCreateLeague(t *testing.T) {
 				mock.ExpectQuery("SELECT \\* FROM sports WHERE id = (.+)").WillReturnRows(mock.NewRows([]string{"id", "name"}))
 			},
 			ExpectedStatusCode: http.StatusBadRequest,
-			ExpectedContent: `"detail":"invalid SportID"`,
+			ExpectedContent:    `"detail":"invalid SportID"`,
 		},
 		{
 			Description: "Valid Request Body",
