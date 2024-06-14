@@ -18,6 +18,8 @@ import (
 )
 
 func TestCreatePlayer(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
@@ -227,6 +229,8 @@ func TestCreatePlayer(t *testing.T) {
 }
 
 func TestDeletePlayer(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
@@ -309,6 +313,8 @@ func TestDeletePlayer(t *testing.T) {
 }
 
 func TestGetPlayer(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
@@ -386,6 +392,8 @@ func TestGetPlayer(t *testing.T) {
 }
 
 func TestGetPlayers(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
@@ -429,6 +437,8 @@ func TestGetPlayers(t *testing.T) {
 }
 
 func TestRegisterPlayer(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {

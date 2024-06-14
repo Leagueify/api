@@ -19,6 +19,8 @@ import (
 )
 
 func TestCreateAccount(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Create Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
@@ -210,6 +212,8 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestLoginAccount(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Create Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
@@ -292,6 +296,8 @@ func TestLoginAccount(t *testing.T) {
 }
 
 func TestLogoutAccount(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Create Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
@@ -336,6 +342,8 @@ func TestLogoutAccount(t *testing.T) {
 }
 
 func TestVerifyAccount(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Create Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {

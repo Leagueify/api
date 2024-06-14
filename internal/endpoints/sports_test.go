@@ -12,6 +12,8 @@ import (
 )
 
 func TestListSports(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Create Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
