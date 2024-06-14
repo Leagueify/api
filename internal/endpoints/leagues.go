@@ -33,6 +33,11 @@ func (api *API) createLeague(c echo.Context) error {
 		return util.SendStatus(http.StatusUnauthorized, c, "")
 	}
 
+	// validate sportID
+	if _, err := api.DB.GetSportByID(league.SportID); err != nil {
+		return util.SendStatus(http.StatusBadRequest, c, "invalid SportID")
+	}
+
 	// Set league.ID overriding provided ID
 	league.ID = util.SignedToken(6)
 	league.MasterAdmin = api.Account.ID

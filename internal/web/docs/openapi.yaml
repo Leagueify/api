@@ -317,7 +317,7 @@ paths:
                 summary: Valid league payload
                 value: {
                   "name": "Leagueify Hockey League",
-                  "sportID": 4,
+                  "sportID": "65",
                   }
       responses:
         201:
@@ -578,15 +578,15 @@ paths:
                   summary: List of Sports
                   value: [
                     {
-                      "id": "1",
+                      "id": "Q4W=",
                       "name": "baseball",
                     },
                     {
-                      "id": "2",
+                      "id": "DV1J",
                       "name": "football",
                     },
                     {
-                      "id": "3",
+                      "id": "1RBC",
                       "name": "hockey",
                     },
                   ]

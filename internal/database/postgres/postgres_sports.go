@@ -28,3 +28,17 @@ func (p Postgres) GetSports() ([]model.Sport, error) {
 
 	return sports, nil
 }
+
+func (p Postgres) GetSportByID(sportID string) (model.Sport, error) {
+	var sport model.Sport
+
+	if err := p.DB.QueryRow(`
+		SELECT * FROM sports WHERE id = $1
+	`, sportID[:len(sportID)-1]).Scan(
+		&sport.ID,
+		&sport.Name,
+	); err != nil {
+		return sport, err
+	}
+	return sport, nil
+}

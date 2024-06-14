@@ -34,10 +34,45 @@ func TestCreateLeague(t *testing.T) {
 		ExpectedContent    string
 	}{
 		{
-			Description: "Valid Request Body",
-			RequestBody: `{"name":"Leagueify Sporting League","sportID":4}`,
+			Description:        "Invalid Request Body",
+			RequestBody:        `{`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"invalid json payload"`,
+		},
+		{
+			Description:        "Missing Name",
+			RequestBody:        `{"sportID":"4"}`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"missing required field\(s\): \[Name\]"`,
+		},
+		{
+			Description:        "Missing SportID",
+			RequestBody:        `{"name":"Leagueify Sporting League"}`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"missing required field\(s\): \[SportID\]"`,
+		},
+		{
+			Description:        "Inalid Request Body - Min Name Violation",
+			RequestBody:        `{"name":"LE","sportID":"4"}`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"'Name' must have a minimum length of '3' characters"`,
+		},
+		{
+			Description: "Invalid SportID",
+			RequestBody: `{"name":"Leagueify Sporting League","sportID":"65"}`,
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM leagues").WillReturnRows(mock.NewRows([]string{"count"}).AddRow(0))
+				mock.ExpectQuery("SELECT \\* FROM sports WHERE id = (.+)").WillReturnRows(mock.NewRows([]string{"id", "name"}))
+			},
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent: `"detail":"invalid SportID"`,
+		},
+		{
+			Description: "Valid Request Body",
+			RequestBody: `{"name":"Leagueify Sporting League","sportID":"65"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM leagues").WillReturnRows(mock.NewRows([]string{"count"}).AddRow(0))
+				mock.ExpectQuery("SELECT \\* FROM sports WHERE id = (.+)").WillReturnRows(mock.NewRows([]string{"id", "name"}).AddRow("65", "hockey"))
 				mock.ExpectExec("INSERT INTO leagues (.+) VALUES (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			ExpectedStatusCode: http.StatusCreated,

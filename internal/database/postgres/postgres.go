@@ -94,7 +94,7 @@ func (p Postgres) InitializeDatabase() error {
 		CREATE TABLE IF NOT EXISTS leagues (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
-			sport_id INTEGER NOT NULL,
+			sport_id TEXT NOT NULL,
 			master_admin TEXT NOT NULL
 		)
 	`); err != nil {

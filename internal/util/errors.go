@@ -60,6 +60,12 @@ func validationErrors(validationErrors validator.ValidationErrors) string {
 		if err.Tag() == "email" {
 			return "invalid email"
 		}
+		if err.Tag() == "min" {
+			return fmt.Sprintf(
+				"'%s' must have a minimum length of '%v' characters",
+				err.Field(), err.Param(),
+			)
+		}
 	}
 	if len(missingFields) != 0 {
 		return fmt.Sprintf("missing required field(s): %v", missingFields)
