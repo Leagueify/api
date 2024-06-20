@@ -277,6 +277,170 @@ paths:
         401:
           $ref: "#/components/errors/unauthorized"
 
+  /players:
+    get:
+      tags:
+        - Players
+      summary: Get All Players
+      description: '
+        Get all players for the active account
+        '
+      security:
+        - apiKey: []
+      responses:
+        200:
+          description: Registered Player IDs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  players:
+                    description: List of player IDs on the active account
+                    type: array
+                    items:
+                      description: Player ID
+                      type: string
+              examples:
+                accountPlayers:
+                  summary: Player IDs on active account
+                  value: {
+                    "players": [
+                        "6G37TEN",
+                        "123ABCD"
+                      ]
+                    }
+        401:
+          $ref: "#/components/errors/unauthorized"
+    post:
+      tags:
+        - Players
+      summary: Create Player(s)
+      description: '
+        Create one or more players for the active account
+        '
+      security:
+        - apiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                players:
+                  description: List of Players to create
+                  type: array
+                  items:
+                    $ref: "#/components/players/schema"
+      responses:
+        201:
+          description: Player(s) Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/successful/schema"
+              examples:
+                playersCreated:
+                  $ref: "#/components/successful/example"
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
+
+  /players/{id}:
+    delete:
+      tags:
+        - Players
+      summary: Delete Player
+      description: '
+        Delete a player from the active account
+        '
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the player to delete
+          required: true
+          type: string
+      responses:
+        204:
+          description: Player(s) Deleted
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
+    get:
+      tags:
+        - Players
+      summary: Get Player Information
+      description: '
+        Retrieve player information
+        '
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the player to retrieve
+          required: true
+          type: string
+      responses:
+        200:
+          description: Player Information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/players/schema"
+        401:
+          $ref: "#/components/errors/unauthorized"
+
+  /players/register:
+    post:
+      tags:
+        - Players
+      summary: Register Player(s)
+      description: '
+        Register players within the league
+        '
+      security:
+        - apiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                players:
+                  description: List of Players to delete
+                  type: array
+                  items:
+                    description: Player ID
+                    type: string
+            examples:
+              validPlayerDeleteRequest:
+                summary: Delete request
+                value: {
+                  "players": [
+                      "6G37TEN",
+                      "123ABCD"
+                    ]
+                  }
+      responses:
+        201:
+          description: Player(s) Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/successful/schema"
+              examples:
+                playersCreated:
+                  $ref: "#/components/successful/example"
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
+
   /positions:
     post:
       tags:
@@ -407,6 +571,36 @@ components:
               value: {
                 "status": "unauthorized"
                 }
+  players:
+    schema:
+      type: object
+      properties:
+        firstName:
+          description: Player's first name
+          type: string
+          minLength: 3
+          maxLength: 32
+          example: "Michael"
+        lastName:
+          description: Player's last name
+          type: string
+          minLength: 3
+          maxLength: 32
+          example: "duBois"
+        dateOfBirth:
+          description: Player's date of birth
+          type: string
+          example: "1990-08-31"
+        position:
+          description: Player's desired position
+          type: string
+          example: "goalie"
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - position
+
   positions:
     schema:
       type: object

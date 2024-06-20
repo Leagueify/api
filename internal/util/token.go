@@ -12,6 +12,11 @@ var (
 	checksumSet = "*~$=U"
 )
 
+func ReturnSignedToken(token string) string {
+	checksum := getChecksum(calulateChecksum([]byte(token)))
+	return fmt.Sprintf("%s%s", token, checksum)
+}
+
 func SignedToken(length int) string {
 	if length <= 1 {
 		return ""

@@ -2,6 +2,8 @@ package util
 
 import (
 	"time"
+
+	"github.com/lib/pq"
 )
 
 // TODO: Add Error if Age is < 0
@@ -20,4 +22,13 @@ func CalculateAge(submitted, comparison string) (int, error) {
 		yearsDiff--
 	}
 	return yearsDiff, nil
+}
+
+func IsInArray(players pq.StringArray, playerID string) bool {
+	for _, player := range players {
+		if playerID == player {
+			return true
+		}
+	}
+	return false
 }

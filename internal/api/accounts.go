@@ -71,12 +71,11 @@ func (api *API) createAccount(c echo.Context) (err error) {
 		)
 	}
 	// Check for existing accounts
-	accounts := []model.Account{}
-	rows, err := api.DB.Query(
-		`SELECT * FROM accounts`,
+	var numAccounts int
+	row := api.DB.QueryRow(
+		`SELECT COUNT(*) FROM accounts`,
 	)
-	if err != nil {
-		sentry.CaptureException(err)
+	if err := row.Scan(&numAccounts); err != nil {
 		return c.JSON(http.StatusBadGateway,
 			map[string]string{
 				"status": "bad gateway",
@@ -84,50 +83,25 @@ func (api *API) createAccount(c echo.Context) (err error) {
 			},
 		)
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var account model.Account
-		if err := rows.Scan(
-			&account.ID,
-			&account.FirstName,
-			&account.LastName,
-			&account.Email,
-			&account.Password,
-			&account.Phone,
-			&account.DateOfBirth,
-			&account.Coach,
-			&account.Volunteer,
-			&account.APIKey,
-			&account.IsActive,
-			&account.IsAdmin,
-		); err != nil {
-			sentry.CaptureException(err)
-			return c.JSON(http.StatusBadGateway,
-				map[string]string{
-					"status": "bad gateway",
-				},
-			)
-		}
-		accounts = append(accounts, account)
-	}
 	// Default is_admin false
 	is_admin := false
-	if len(accounts) < 1 {
+	if numAccounts < 1 {
 		is_admin = true
 	}
 	// Insert account into database
 	_, err = api.DB.Exec(`
 		INSERT INTO accounts (
 			id, first_name, last_name, email, password,
-			phone, date_of_birth, coach, volunteer, apikey,
-			is_active, is_admin
+			phone, date_of_birth, registration_code, player_ids,
+			coach, volunteer, apikey, is_active, is_admin
 		)
 		VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+			$1, $2, $3, $4, $5, $6, $7,
+			$8, $9, $10, $11, $12, $13, $14
 		)`,
 		account.ID[:len(account.ID)-1], account.FirstName,
 		account.LastName, account.Email, account.Password,
-		account.Phone, account.DateOfBirth, account.Coach,
+		account.Phone, account.DateOfBirth, "", "{}", account.Coach,
 		account.Volunteer, "", true, is_admin,
 	)
 	if err != nil {

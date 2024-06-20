@@ -40,6 +40,8 @@ func (api *API) requiresAdmin(f func(echo.Context) error) echo.HandlerFunc {
 			&account.Password,
 			&account.Phone,
 			&account.DateOfBirth,
+			&account.RegistrationCode,
+			&account.Players,
 			&account.Coach,
 			&account.Volunteer,
 			&account.APIKey,
@@ -79,6 +81,8 @@ func (api *API) requiresAuth(f func(echo.Context) error) echo.HandlerFunc {
 			&account.Password,
 			&account.Phone,
 			&account.DateOfBirth,
+			&account.RegistrationCode,
+			&account.Players,
 			&account.Coach,
 			&account.Volunteer,
 			&account.APIKey,
@@ -116,6 +120,7 @@ func Routes(e *echo.Echo) {
 	// Register API Routes
 	api.Accounts(routes)
 	api.Leagues(routes)
+	api.Players(routes)
 	api.Positions(routes)
 	api.Sports(routes)
 }
