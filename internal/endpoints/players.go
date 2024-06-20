@@ -5,7 +5,6 @@ import (
 
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
-	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 )
@@ -22,7 +21,6 @@ func (api *API) createPlayer(c echo.Context) error {
 	payload := model.PlayerCreation{}
 	// Bind payload to player model
 	if err := c.Bind(&payload); err != nil {
-		sentry.CaptureException(err)
 		return util.SendStatus(http.StatusBadRequest, c, "invalid json payload")
 	}
 	// Validate payload against model

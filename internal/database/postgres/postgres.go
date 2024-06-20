@@ -39,7 +39,6 @@ func Connect(DBConnStr string) (*sql.DB, error) {
 func (p Postgres) BeginTransaction() (*sql.Tx, error) {
 	tx, err := p.DB.Begin()
 	if err != nil {
-		sentry.CaptureException(err)
 		return nil, err
 	}
 	return tx, nil
@@ -48,7 +47,6 @@ func (p Postgres) BeginTransaction() (*sql.Tx, error) {
 func (p Postgres) InitializeDatabase() error {
 	tx, err := p.DB.Begin()
 	if err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 	defer tx.Rollback()
@@ -72,7 +70,6 @@ func (p Postgres) InitializeDatabase() error {
 			is_admin BOOLEAN DEFAULT false
 		)
 	`); err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 
@@ -89,7 +86,6 @@ func (p Postgres) InitializeDatabase() error {
 			has_error BOOLEAN DEFAULT true
 		)
 	`); err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 
@@ -98,11 +94,10 @@ func (p Postgres) InitializeDatabase() error {
 		CREATE TABLE IF NOT EXISTS leagues (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
-			sport_id INTEGER NOT NULL,
+			sport_id TEXT NOT NULL,
 			master_admin TEXT NOT NULL
 		)
 	`); err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 
@@ -119,7 +114,6 @@ func (p Postgres) InitializeDatabase() error {
 			is_registered BOOLEAN DEFAULT false
 		)
 	`); err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 
@@ -130,7 +124,6 @@ func (p Postgres) InitializeDatabase() error {
 			name TEXT UNIQUE NOT NULL
 		)
 	`); err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 
@@ -143,7 +136,6 @@ func (p Postgres) InitializeDatabase() error {
 			amount_paid INTEGER NOT NULL
 		)
 	`); err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 
@@ -154,7 +146,6 @@ func (p Postgres) InitializeDatabase() error {
 			name TEXT NOT NULL UNIQUE
 		)
 	`); err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 
@@ -168,14 +159,12 @@ func (p Postgres) InitializeDatabase() error {
 		if _, err = tx.Exec(`
 			INSERT INTO sports (id, name) VALUES ($1, $2)
 		`, sportID[:len(sportID)-1], sport); err != nil {
-			sentry.CaptureException(err)
 			return err
 		}
 	}
 
 	// commit database initialization
 	if err := tx.Commit(); err != nil {
-		sentry.CaptureException(err)
 		return err
 	}
 	return nil

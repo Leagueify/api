@@ -5,7 +5,6 @@ import (
 
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
-	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 )
 
@@ -17,7 +16,6 @@ func (api *API) createLeague(c echo.Context) error {
 	league := model.LeagueCreation{}
 	// bind payload to league model
 	if err := c.Bind(&league); err != nil {
-		sentry.CaptureException(err)
 		return util.SendStatus(http.StatusBadRequest, c, "invalid json payload")
 	}
 
@@ -35,18 +33,22 @@ func (api *API) createLeague(c echo.Context) error {
 		return util.SendStatus(http.StatusUnauthorized, c, "")
 	}
 
+	// validate sportID
+	if _, err := api.DB.GetSportByID(league.SportID); err != nil {
+		return util.SendStatus(http.StatusBadRequest, c, "invalid SportID")
+	}
+
 	// Set league.ID overriding provided ID
 	league.ID = util.SignedToken(6)
 	league.MasterAdmin = api.Account.ID
 	// Insert league into database
 	if err := api.DB.CreateLeague(league); err != nil {
-		return util.SendStatus(http.StatusUnauthorized, c, "")
+		return util.SendStatus(http.StatusBadRequest, c, util.HandleError(err))
 	}
 	// Successful League Creation
 	return c.JSON(http.StatusCreated,
 		map[string]string{
 			"message": "successful",
-			"detail":  league.ID,
 		},
 	)
 }

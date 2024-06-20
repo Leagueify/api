@@ -3,7 +3,6 @@ package postgres
 import (
 	"github.com/Leagueify/api/internal/model"
 	"github.com/Leagueify/api/internal/util"
-	"github.com/getsentry/sentry-go"
 )
 
 // sport functions
@@ -21,7 +20,6 @@ func (p Postgres) GetSports() ([]model.Sport, error) {
 			&sport.ID,
 			&sport.Name,
 		); err != nil {
-			sentry.CaptureException(err)
 			return sports, err
 		}
 		sport.ID = util.ReturnSignedToken(sport.ID)
@@ -29,4 +27,18 @@ func (p Postgres) GetSports() ([]model.Sport, error) {
 	}
 
 	return sports, nil
+}
+
+func (p Postgres) GetSportByID(sportID string) (model.Sport, error) {
+	var sport model.Sport
+
+	if err := p.DB.QueryRow(`
+		SELECT * FROM sports WHERE id = $1
+	`, sportID[:len(sportID)-1]).Scan(
+		&sport.ID,
+		&sport.Name,
+	); err != nil {
+		return sport, err
+	}
+	return sport, nil
 }

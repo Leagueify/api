@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-playground/validator/v10"
 	"github.com/lib/pq"
 )
@@ -19,7 +20,12 @@ func HandleError(err error) string {
 	case validator.ValidationErrors:
 		return validationErrors(errType)
 	default:
-		return fmt.Sprintf("unknown error: %v :: %v", reflect.TypeOf(err), err.Error())
+		msg := fmt.Sprintf(
+			"unknown error type: %v :: %v",
+			reflect.TypeOf(err), err.Error(),
+		)
+		sentry.CaptureMessage(msg)
+		return msg
 	}
 }
 
@@ -36,7 +42,9 @@ func textprotoErrors(err *textproto.Error) string {
 	case 535:
 		return "credential authentication failure"
 	default:
-		return fmt.Sprintf("Unknown Error Code: '%v'", err.Code)
+		msg := fmt.Sprintf("unknown textproto.Error: '%v'", err.Code)
+		sentry.CaptureMessage(msg)
+		return msg
 	}
 }
 
@@ -52,9 +60,17 @@ func validationErrors(validationErrors validator.ValidationErrors) string {
 		if err.Tag() == "email" {
 			return "invalid email"
 		}
+		if err.Tag() == "min" {
+			return fmt.Sprintf(
+				"'%s' must have a minimum length of '%v' characters",
+				err.Field(), err.Param(),
+			)
+		}
 	}
 	if len(missingFields) != 0 {
 		return fmt.Sprintf("missing required field(s): %v", missingFields)
 	}
-	return fmt.Sprintf("validation error: %v", validationErrors)
+	msg := fmt.Sprintf("unknown validation error: %v", validationErrors)
+	sentry.CaptureMessage(msg)
+	return msg
 }
