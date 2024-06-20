@@ -32,6 +32,7 @@ type (
 		DateOfBirth string `json:"dateOfBirth" validate:"required"`
 		Coach       bool   `json:"coach"`
 		Volunteer   bool   `json:"volunteer"`
+		IsAdmin     bool
 	}
 
 	AccountLogin struct {

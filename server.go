@@ -4,8 +4,8 @@ import (
 	"embed"
 	"fmt"
 
-	"github.com/Leagueify/api/internal/api"
 	"github.com/Leagueify/api/internal/config"
+	"github.com/Leagueify/api/internal/endpoints"
 	"github.com/getsentry/sentry-go"
 	sentryecho "github.com/getsentry/sentry-go/echo"
 	"github.com/labstack/echo/v4"

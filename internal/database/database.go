@@ -2,164 +2,60 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/Leagueify/api/internal/config"
-	"github.com/getsentry/sentry-go"
-	_ "github.com/lib/pq"
+	"github.com/Leagueify/api/internal/database/postgres"
+	"github.com/Leagueify/api/internal/model"
+	"github.com/lib/pq"
 )
 
-func init() {
-	initAccounts()
-	initLeagues()
-	initPlayers()
-	initPositions()
-	initRegistrations()
-	initSports()
+type Database interface {
+	// account functions
+	ActivateAccount(accountID, apikey string) error
+	CreateAccount(account model.AccountCreation) error
+	GetAccountByAPIKey(apikey string) (model.Account, error)
+	GetAccountByEmail(email string) (model.Account, error)
+	GetTotalAccounts() (int, error)
+	SetAPIKey(apikey, accountID string) error
+	SetPlayerIDs(playerIDs *pq.StringArray, accountID string, tx *sql.Tx) error
+	SetRegistrationCode(tx *sql.Tx, code, accountID string) error
+	UnsetAPIKey(accountID string) error
+	// league functions
+	CreateLeague(league model.LeagueCreation) error
+	GetTotalLeagues() (int, error)
+	// player function
+	CreatePlayer(player model.Player, tx *sql.Tx) error
+	DeletePlayer(playerID string, tx *sql.Tx) error
+	GetPlayer(playerID string) (model.Player, error)
+	RegisterPlayer(tx *sql.Tx, playerID string) error
+	// position functions
+	CreatePositions(positions model.PositionCreation) error
+	GetAllPositions() ([]model.Position, error)
+	GetTotalPositions() (int, error)
+	// registration functions
+	CreateRegistration(tx *sql.Tx, registration model.Registration) error
+	GetRegistration(tx *sql.Tx, registrationID string) (pq.StringArray, error)
+	SetRegistration(tx *sql.Tx, playerIDs pq.StringArray, registrationID string) error
+	// sport functions
+	GetSports() ([]model.Sport, error)
+	// database functions
+	BeginTransaction() (*sql.Tx, error)
+	InitializeDatabase() error
 }
 
-func Connect() (*sql.DB, error) {
+func GetDatabase() (Database, error) {
 	cfg := config.LoadConfig()
-	db, err := sql.Open("postgres", cfg.DBConnStr)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
-func initAccounts() {
-	db, err := Connect()
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-	defer db.Close()
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS accounts (
-			id TEXT PRIMARY KEY,
-			first_name TEXT NOT NULL,
-			last_name TEXT NOT NULL,
-			email TEXT NOT NULL UNIQUE,
-			password TEXT NOT NULL,
-			phone TEXT NOT NULL UNIQUE,
-			date_of_birth TEXT NOT NULL,
-			registration_code TEXT NOT NULL,
-			player_ids TEXT[] NOT NULL,
-			coach BOOLEAN DEFAULT false,
-			volunteer BOOLEAN DEFAULT false,
-			apikey TEXT NOT NULL,
-			is_active BOOLEAN DEFAULT false,
-			is_admin BOOLEAN DEFAULT false
-		)
-	`)
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-}
-
-func initLeagues() {
-	db, err := Connect()
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-	defer db.Close()
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS leagues (
-			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL,
-			sport_id INTEGER NOT NULL,
-			master_admin TEXT NOT NULL
-		)
-	`)
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-}
-
-func initPlayers() {
-	db, err := Connect()
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-	defer db.Close()
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS players (
-			id TEXT PRIMARY KEY,
-			first_name TEXT NOT NULL,
-			last_name TEXT NOT NULL,
-			date_of_birth TEXT NOT NULL,
-			position TEXT NOT NULL,
-			team TEXT NOT NULL,
-			division TEXT NOT NULL,
-			is_registered BOOLEAN DEFAULT false
-		)
-	`)
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-}
-
-func initPositions() {
-	db, err := Connect()
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-	defer db.Close()
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS positions (
-			id TEXT PRIMARY KEY,
-			name TEXT UNIQUE NOT NULL
-		)
-	`)
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-}
-
-func initRegistrations() {
-	db, err := Connect()
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-	defer db.Close()
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS registrations (
-			id TEXT PRIMARY KEY,
-			player_ids TEXT[] NOT NULL,
-			amount_due INTEGER NOT NULL,
-			amount_paid INTEGER NOT NULL
-		)
-	`)
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-}
-
-func initSports() {
-	sports := []string{
-		"baseball", "basketball", "football", "hockey", "quidditch",
-		"rugby", "soccer", "softball", "volleyball",
-	}
-	db, err := Connect()
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-	defer db.Close()
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS sports (
-			id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-			name TEXT NOT NULL
-		)
-	`)
-	if err != nil {
-		sentry.CaptureException(err)
-	}
-	for _, sport := range sports {
-		if _, err = db.Exec(`
-			INSERT INTO sports (id, name) VALUES (DEFAULT, $1)
-		`, sport); err != nil {
-			sentry.CaptureException(err)
+	switch cfg.DB {
+	case "postgres":
+		db, err := postgres.Connect(cfg.DBConnStr)
+		if err != nil {
+			return nil, fmt.Errorf("ERROR: Database Connection Error '%s'", err)
 		}
-	}
-	if err != nil {
-		sentry.CaptureException(err)
+		return postgres.Postgres{
+			DB: db,
+		}, nil
+	default:
+		return nil, fmt.Errorf("ERROR: Unsupported Database '%s'", cfg.DB)
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/Leagueify/api/internal/database/postgres"
 	"github.com/Leagueify/api/internal/model"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -18,11 +19,11 @@ import (
 
 func TestCreatePlayer(t *testing.T) {
 	// Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		RequestBody        string
@@ -52,7 +53,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Single Player Missing FirstName",
 			RequestBody: `{"players":[{"lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectRollback()
 			},
@@ -63,7 +64,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Single Player Missing LastName",
 			RequestBody: `{"players":[{"firstName":"Leagueify","dateOfBirth":"2016-12-10","position":"goalie"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectRollback()
 			},
@@ -74,7 +75,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Single Player Missing DateOfBirth",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","position":"goalie"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectRollback()
 			},
@@ -85,7 +86,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Single Player Missing Position",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectRollback()
 			},
@@ -96,7 +97,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Single Player Invalid Position",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10","position":"skate"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectRollback()
 			},
@@ -107,20 +108,20 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Create Single Player",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO players (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectExec("UPDATE accounts SET player_ids = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			},
-			ExpectedStatusCode: http.StatusOK,
+			ExpectedStatusCode: http.StatusCreated,
 			ExpectedContent:    `"status":"successful"`,
 		},
 		{
 			Description: "Second Player Missing FirstName",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"},{"lastName":"Test","dateOfBirth":"2019-02-14","position":"skater"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO players (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectRollback()
@@ -132,7 +133,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Second Player Missing LastName",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"},{"firstName":"Second","dateOfBirth":"2019-02-14","position":"skater"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO players (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectRollback()
@@ -144,7 +145,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Second Player Missing DateOfBirth",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"},{"firstName":"Second","lastName":"Test","position":"skater"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO players (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectRollback()
@@ -156,7 +157,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Second Player Missing Position",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"},{"firstName":"Second","lastName":"Test","dateOfBirth":"2019-02-14"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO players (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectRollback()
@@ -168,7 +169,7 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Second Player Invalid Position",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"},{"firstName":"Second","lastName":"Test","dateOfBirth":"2019-02-14","position":"skate"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO players (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectRollback()
@@ -180,14 +181,14 @@ func TestCreatePlayer(t *testing.T) {
 			Description: "Create Multiple Players",
 			RequestBody: `{"players":[{"firstName":"Leagueify","lastName":"Test","dateOfBirth":"2016-12-10","position":"goalie"},{"firstName":"Second","lastName":"Test","dateOfBirth":"2019-02-14","position":"skater"}]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM positions").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("skater").AddRow("goalie"))
+				mock.ExpectQuery("SELECT \\* FROM positions").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "skater").AddRow("2", "goalie"))
 				mock.ExpectBegin()
 				mock.ExpectExec("INSERT INTO players (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectExec("INSERT INTO players (.+) VALUES (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectExec("UPDATE accounts SET player_ids = (.+) WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
 				mock.ExpectCommit()
 			},
-			ExpectedStatusCode: http.StatusOK,
+			ExpectedStatusCode: http.StatusCreated,
 			ExpectedContent:    `"status":"successful"`,
 		},
 	}
@@ -198,7 +199,7 @@ func TestCreatePlayer(t *testing.T) {
 		}
 		// Initialize Echo and the Echo validator
 		e := echo.New()
-		account := &model.Account{
+		account := model.Account{
 			ID: "123ABC",
 		}
 		e.Validator = &API{Validator: validator.New()}
@@ -227,40 +228,40 @@ func TestCreatePlayer(t *testing.T) {
 
 func TestDeletePlayer(t *testing.T) {
 	// Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		ID                 string
-		Account            *model.Account
+		Account            model.Account
 		Mock               func(mock sqlmock.Sqlmock)
 		ExpectedStatusCode int
 	}{
 		{
 			Description:        "Invalid Player ID",
 			ID:                 "ABD1234",
-			Account:            &model.Account{ID: "123ABC"},
+			Account:            model.Account{ID: "123ABC"},
 			ExpectedStatusCode: http.StatusNoContent,
 		},
 		{
 			Description:        "Valid Player ID no Player ID in Account",
 			ID:                 "QP4RD39CEF",
-			Account:            &model.Account{ID: "123ABC"},
+			Account:            model.Account{ID: "123ABC"},
 			ExpectedStatusCode: http.StatusNoContent,
 		},
 		{
 			Description:        "Valid Player ID not in Account",
 			ID:                 "49QRBF09YA",
-			Account:            &model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CE"}},
+			Account:            model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CE"}},
 			ExpectedStatusCode: http.StatusNoContent,
 		},
 		{
 			Description: "Valid Player ID in Account",
 			ID:          "49QRBF09YA",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec("DELETE FROM players WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -272,7 +273,7 @@ func TestDeletePlayer(t *testing.T) {
 		{
 			Description: "Valid Player ID in Account with Multiple Player IDs",
 			ID:          "49QRBF09YA",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCD", "49QRBF09Y"}},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCD", "49QRBF09Y"}},
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec("DELETE FROM players WHERE id = (.+)").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -309,40 +310,40 @@ func TestDeletePlayer(t *testing.T) {
 
 func TestGetPlayer(t *testing.T) {
 	// Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
 		ID                 string
-		Account            *model.Account
+		Account            model.Account
 		Mock               func(mock sqlmock.Sqlmock)
 		ExpectedStatusCode int
 	}{
 		{
 			Description:        "Invalid Player ID",
 			ID:                 "ABD1234",
-			Account:            &model.Account{ID: "123ABC"},
+			Account:            model.Account{ID: "123ABC"},
 			ExpectedStatusCode: http.StatusNotFound,
 		},
 		{
 			Description:        "Valid Player ID no Player ID in Account",
 			ID:                 "QP4RD39CEF",
-			Account:            &model.Account{ID: "123ABC"},
+			Account:            model.Account{ID: "123ABC"},
 			ExpectedStatusCode: http.StatusNotFound,
 		},
 		{
 			Description:        "Valid Player ID not in Account",
 			ID:                 "49QRBF09YA",
-			Account:            &model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CE"}},
+			Account:            model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CE"}},
 			ExpectedStatusCode: http.StatusNotFound,
 		},
 		{
 			Description: "Valid Player ID in Account",
 			ID:          "49QRBF09YA",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT \\* FROM players WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "date_of_birth", "position", "team", "division", "is_registered"}).AddRow("49QRBF09YA", "Leagueify", "Test", "1990-08-31", "goalie", "", "", false))
 			},
@@ -351,7 +352,7 @@ func TestGetPlayer(t *testing.T) {
 		{
 			Description: "Valid Player ID in Account with Multiple Player IDs",
 			ID:          "49QRBF09YA",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCD", "49QRBF09Y"}},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{"12345ABCD", "49QRBF09Y"}},
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT \\* FROM players WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "first_name", "last_name", "date_of_birth", "position", "team", "division", "is_registered"}).AddRow("49QRBF09YA", "Leagueify", "Test", "1990-08-31", "goalie", "", "", false))
 			},
@@ -386,24 +387,24 @@ func TestGetPlayer(t *testing.T) {
 
 func TestGetPlayers(t *testing.T) {
 	// Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
-		Account            *model.Account
+		Account            model.Account
 		ExpectedStatusCode int
 	}{
 		{
 			Description:        "No Results",
-			Account:            &model.Account{ID: "123ABC"},
+			Account:            model.Account{ID: "123ABC"},
 			ExpectedStatusCode: http.StatusNotFound,
 		},
 		{
 			Description:        "Result Found",
-			Account:            &model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CEF"}},
+			Account:            model.Account{ID: "123ABC", Players: pq.StringArray{"QP4RD39CEF"}},
 			ExpectedStatusCode: http.StatusOK,
 		},
 	}
@@ -429,14 +430,14 @@ func TestGetPlayers(t *testing.T) {
 
 func TestRegisterPlayer(t *testing.T) {
 	// Mock DB
-	db, mock, err := sqlmock.New()
+	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error: '%s' was not expected when creating the mock DB", err)
 	}
-	defer db.Close()
+	db := postgres.Postgres{DB: mockDB}
 	testCases := []struct {
 		Description        string
-		Account            *model.Account
+		Account            model.Account
 		RequestBody        string
 		Mock               func(mock sqlmock.Sqlmock)
 		ExpectedContent    string
@@ -444,28 +445,28 @@ func TestRegisterPlayer(t *testing.T) {
 	}{
 		{
 			Description:        "Invalid Payload",
-			Account:            &model.Account{ID: "123ABC"},
+			Account:            model.Account{ID: "123ABC"},
 			RequestBody:        `{`,
 			ExpectedStatusCode: http.StatusBadRequest,
 			ExpectedContent:    `"detail":"invalid json payload"`,
 		},
 		{
 			Description:        "Missing Players",
-			Account:            &model.Account{ID: "123ABC"},
+			Account:            model.Account{ID: "123ABC"},
 			RequestBody:        `{}`,
 			ExpectedStatusCode: http.StatusBadRequest,
 			ExpectedContent:    `"detail":"missing required field\(s\): \[Players\]"`,
 		},
 		{
 			Description:        "No Players in payload",
-			Account:            &model.Account{ID: "123ABC"},
+			Account:            model.Account{ID: "123ABC"},
 			RequestBody:        `{"players":[]}`,
 			ExpectedStatusCode: http.StatusBadRequest,
 			ExpectedContent:    `"detail":"payload contains no players"`,
 		},
 		{
 			Description: "Invalid Player ID",
-			Account:     &model.Account{ID: "123ABC"},
+			Account:     model.Account{ID: "123ABC"},
 			RequestBody: `{"players":["ABD123"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -477,7 +478,7 @@ func TestRegisterPlayer(t *testing.T) {
 		},
 		{
 			Description: "Valid Player ID no Player ID in Account",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{}},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{}},
 			RequestBody: `{"players":["W4SBH35WV8"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -489,7 +490,7 @@ func TestRegisterPlayer(t *testing.T) {
 		},
 		{
 			Description: "Valid Player ID not in Account",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{"49QRBF09Y"}},
 			RequestBody: `{"players":["DW74MSY5XQ"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -501,7 +502,7 @@ func TestRegisterPlayer(t *testing.T) {
 		},
 		{
 			Description: "Valid Player ID in Account",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"DW74MSY5X"}},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{"DW74MSY5X"}},
 			RequestBody: `{"players":["DW74MSY5XQ"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -515,7 +516,7 @@ func TestRegisterPlayer(t *testing.T) {
 		},
 		{
 			Description: "Valid Player ID in Account with Multiple Player IDs",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"W4SBH35WV", "DW74MSY5X"}},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{"W4SBH35WV", "DW74MSY5X"}},
 			RequestBody: `{"players":["DW74MSY5XQ"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
@@ -529,7 +530,7 @@ func TestRegisterPlayer(t *testing.T) {
 		},
 		{
 			Description: "Valid Player ID add to Existing Registration",
-			Account:     &model.Account{ID: "123ABC", Players: pq.StringArray{"W4SBH35WV", "DW74MSY5X"}, RegistrationCode: "123ABC"},
+			Account:     model.Account{ID: "123ABC", Players: pq.StringArray{"W4SBH35WV", "DW74MSY5X"}, RegistrationCode: "123ABC"},
 			RequestBody: `{"players":["DW74MSY5XQ"]}`,
 			Mock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
