@@ -54,7 +54,7 @@ func (p Postgres) InitializeDatabase() error {
 	defer tx.Rollback()
 
 	// create accounts table
-	_, err = tx.Exec(`
+	if _, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS accounts (
 			id TEXT PRIMARY KEY,
 			first_name TEXT NOT NULL,
@@ -71,28 +71,43 @@ func (p Postgres) InitializeDatabase() error {
 			is_active BOOLEAN DEFAULT false,
 			is_admin BOOLEAN DEFAULT false
 		)
-	`)
-	if err != nil {
+	`); err != nil {
+		sentry.CaptureException(err)
+		return err
+	}
+
+	// create email table
+	if _, err := tx.Exec(`
+		CREATE TABLE IF NOT EXISTS email (
+			id TEXT PRIMARY KEY,
+			email TEXT NOT NULL UNIQUE,
+			smtp_host TEXT NOT NULL,
+			smtp_port INTEGER NOT NULL,
+			smtp_user TEXT NOT NULL,
+			smtp_pass TEXT NOT NULL,
+			is_active BOOLEAN DEFAULT false,
+			has_error BOOLEAN DEFAULT true
+		)
+	`); err != nil {
 		sentry.CaptureException(err)
 		return err
 	}
 
 	// create leagues table
-	_, err = tx.Exec(`
+	if _, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS leagues (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
 			sport_id INTEGER NOT NULL,
 			master_admin TEXT NOT NULL
 		)
-	`)
-	if err != nil {
+	`); err != nil {
 		sentry.CaptureException(err)
 		return err
 	}
 
 	// create players table
-	_, err = tx.Exec(`
+	if _, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS players (
 			id TEXT PRIMARY KEY,
 			first_name TEXT NOT NULL,
@@ -103,46 +118,42 @@ func (p Postgres) InitializeDatabase() error {
 			division TEXT NOT NULL,
 			is_registered BOOLEAN DEFAULT false
 		)
-	`)
-	if err != nil {
+	`); err != nil {
 		sentry.CaptureException(err)
 		return err
 	}
 
 	// create positions table
-	_, err = tx.Exec(`
+	if _, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS positions (
 			id TEXT PRIMARY KEY,
 			name TEXT UNIQUE NOT NULL
 		)
-	`)
-	if err != nil {
+	`); err != nil {
 		sentry.CaptureException(err)
 		return err
 	}
 
 	// create registrations table
-	_, err = tx.Exec(`
+	if _, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS registrations (
 			id TEXT PRIMARY KEY,
 			player_ids TEXT[] NOT NULL,
 			amount_due INTEGER NOT NULL,
 			amount_paid INTEGER NOT NULL
 		)
-	`)
-	if err != nil {
+	`); err != nil {
 		sentry.CaptureException(err)
 		return err
 	}
 
 	// create sports table
-	_, err = tx.Exec(`
+	if _, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS sports (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL UNIQUE
 		)
-	`)
-	if err != nil {
+	`); err != nil {
 		sentry.CaptureException(err)
 		return err
 	}
@@ -160,10 +171,6 @@ func (p Postgres) InitializeDatabase() error {
 			sentry.CaptureException(err)
 			return err
 		}
-	}
-	if err != nil {
-		sentry.CaptureException(err)
-		return err
 	}
 
 	// commit database initialization

@@ -19,6 +19,8 @@ import (
 )
 
 func TestCreatePosition(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Create Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
@@ -111,6 +113,8 @@ func TestCreatePosition(t *testing.T) {
 }
 
 func TestListPositions(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
 	// Create Mock DB
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {

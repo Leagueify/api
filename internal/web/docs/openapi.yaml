@@ -233,6 +233,63 @@ paths:
         401:
           $ref: "#/components/errors/unauthorized"
 
+  /email/config:
+    post:
+      tags:
+      - Email
+      summary: Create an Email
+      description: '
+        Create an email configuration to enable email notifications
+        '
+      security:
+        - apiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  description: Outbound email address
+                  type: string
+                  example: noreply@leagueify.org
+                smtpHost:
+                  description: SMTP Host
+                  type: string
+                  example: smtp.gmail.com
+                smtpPort:
+                  description: SMTP Port
+                  type: integer
+                  example: 465
+                smtpUser:
+                  description: SMTP Username
+                  type: tring
+                  example: leagueify
+                smtpPass:
+                  description: SMTP Password
+                  type: string
+                  example: +#3Game!
+              required:
+                - email
+                - smtpHost
+                - smtpPort
+                - smtpUser
+                - smtpPass
+      responses:
+        201:
+          description: Email Config Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/successful/schema"
+              examples:
+                emailConfigCreated:
+                  $ref: "#/components/successful/example"
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
+
   /leagues:
     post:
       tags:

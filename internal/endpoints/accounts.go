@@ -57,6 +57,13 @@ func (api *API) createAccount(c echo.Context) (err error) {
 	if totalAccounts < 1 {
 		account.IsAdmin = true
 	}
+	emailConfig, err := api.DB.GetTotalEmailConfigs()
+	if err != nil {
+		return util.SendStatus(http.StatusBadRequest, c, util.HandleError(err))
+	}
+	if emailConfig == 0 {
+		account.IsActive = true
+	}
 	// Insert account into database
 	if err := api.DB.CreateAccount(account); err != nil {
 		return util.SendStatus(http.StatusBadRequest, c, util.HandleError(err))

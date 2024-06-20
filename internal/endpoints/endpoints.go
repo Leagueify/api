@@ -81,6 +81,7 @@ func Routes(e *echo.Echo) {
 	routes := e.Group("/api")
 	// Register API Routes
 	api.Accounts(routes)
+	api.Email(routes)
 	api.Leagues(routes)
 	api.Players(routes)
 	api.Positions(routes)
