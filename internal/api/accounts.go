@@ -14,6 +14,8 @@ import (
 func (api *API) Accounts(e *echo.Group) {
 	e.POST("/accounts", api.createAccount)
 	e.POST("/accounts/:id/verify", api.verifyAccount)
+	e.POST("/accounts/login", api.loginAccount)
+	e.POST("/accounts/logout", api.requiresAuth(api.logoutAccount))
 }
 
 func (api *API) createAccount(c echo.Context) (err error) {
@@ -142,6 +144,99 @@ func (api *API) createAccount(c echo.Context) (err error) {
 			"status": "successful",
 		},
 	)
+}
+
+func (api *API) loginAccount(c echo.Context) error {
+	credentials := &model.AccountLogin{}
+	account := &model.Account{}
+	if err := c.Bind(&credentials); err != nil {
+		return c.JSON(http.StatusBadRequest,
+			map[string]string{
+				"status": "bad request",
+				"detail": util.HandleError(err),
+			},
+		)
+	}
+	if err := api.DB.QueryRow(`
+		SELECT password, is_active FROM accounts WHERE email = $1 AND is_active = true
+	`, credentials.Email).Scan(
+		&account.Password,
+		&account.IsActive,
+	); err != nil {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	if !auth.ComparePasswords(credentials.Password, account.Password) {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	// Generate API Key
+	accountAPIKey := util.SignedToken(64)
+	result, err := api.DB.Exec(`
+		UPDATE accounts SET apikey = $1 WHERE email = $2
+	`, accountAPIKey[:len(accountAPIKey)-1], credentials.Email)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	if rows, err := result.RowsAffected(); err != nil || rows != 1 {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	// Return API Key
+	return c.JSON(http.StatusOK,
+		map[string]string{
+			"status": "successful",
+			"apikey": accountAPIKey,
+		},
+	)
+}
+
+func (api *API) logoutAccount(c echo.Context) error {
+	account := &model.Account{}
+	if err := api.DB.QueryRow(`
+		SELECT email, apikey FROM accounts WHERE apikey = $1
+	`, &account.APIKey).Scan(
+		&account.Email,
+		&account.APIKey,
+	); err != nil {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	// Remove API Key
+	result, err := api.DB.Exec(`
+		UPDATE accounts SET apikey = '' WHERE email = $1
+	`, &account.Email)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	if rows, err := result.RowsAffected(); err != nil || rows != 1 {
+		return c.JSON(http.StatusUnauthorized,
+			map[string]string{
+				"status": "unauthorized",
+			},
+		)
+	}
+	return c.JSON(http.StatusOK, "{}")
 }
 
 func (api *API) verifyAccount(c echo.Context) (err error) {

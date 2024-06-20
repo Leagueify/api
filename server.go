@@ -29,14 +29,12 @@ func main() {
 		Format: "${time_rfv3339}::${remote_id}::${status}:${method}:${uri}\n",
 	}))
 	e.Use(middleware.Recover())
-	// Sentry Initialization if Configured
-	if cfg.SentryDsn != "" {
+	// Sentry Initialization
+	if cfg.Sentry {
 		if err := sentry.Init(sentry.ClientOptions{
-			Dsn: cfg.SentryDsn,
-			// Set TracesSampleRate to 1.0 to capture 100%
-			// of transactions for performance monitoring.
-			// We recommend adjusting this value in production.
-			TracesSampleRate: 1.0,
+			Dsn: cfg.SentryDSN,
+			// Adjust TSR in production
+			TracesSampleRate: cfg.SentryTSR,
 		}); err != nil {
 			fmt.Printf("Sentry initialization failed: %v\n", err)
 		}
