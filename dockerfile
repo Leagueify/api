@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 # Download Go Depedencies
-FROM golang:1.22.0-alpine3.19 as base
+FROM golang:1.22.0-alpine3.19 AS base
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 # Build local development image
-FROM golang:1.22.0-alpine3.19 as dev
+FROM golang:1.22.0-alpine3.19 AS dev
 COPY --from=base /go/bin /go/bin
 COPY --from=base /go/pkg /go/pkg
 WORKDIR /app
@@ -13,7 +13,7 @@ RUN go install github.com/air-verse/air@latest
 COPY . ./
 EXPOSE 8888
 # Build the Go Binary
-FROM golang:1.22.0-alpine3.19 as builder
+FROM golang:1.22.0-alpine3.19 AS builder
 COPY --from=base /go/bin /go/bin
 COPY --from=base /go/pkg /go/pkg
 WORKDIR /app
