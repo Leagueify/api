@@ -1,19 +1,13 @@
-clean:
-	go mod tidy
+build:
+	docker build -t leagueify-api .
 
-dev-build:
+build-dev:
 	docker build --target dev -t leagueify-api-dev .
 
-dev-clean: dev-stop
-	docker image rm leagueify-api-dev
+clean: stop
+	docker compose down -v
 
-dev-start: dev-build
-	docker compose --profile dev up
-
-dev-start-detached: dev-build
-	docker compose --profile dev up -d
-
-dev-stop:
+clean-dev: stop-dev
 	docker compose --profile dev down -v
 
 format:
@@ -22,17 +16,25 @@ format:
 init:
 	go get .
 
-prod-build:
-	docker build -t leagueify-api .
+prep: format vet
 
-prod-clean: prod-stop
-	docker image rm leagueify-api
+start: build
+	docker compose --profile prod up
 
-prod-start: prod-build
+start-detached: build
 	docker compose --profile prod up -d
 
-prod-stop:
+start-dev: build-dev
+	docker compose --profile dev up
+
+start-dev-detached: build-dev
+	docker compose --profile dev up -d
+
+stop:
 	docker compose --profile prod down -v
+
+stop-dev:
+	docker compose --profile dev down -v
 
 test:
 	mkdir -p testCoverage
