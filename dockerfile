@@ -9,7 +9,7 @@ FROM golang:1.22.0-alpine3.19 as dev
 COPY --from=base /go/bin /go/bin
 COPY --from=base /go/pkg /go/pkg
 WORKDIR /app
-RUN go install github.com/cosmtrek/air@latest
+RUN go install github.com/air-verse/air@latest
 COPY . ./
 EXPOSE 8888
 # Build the Go Binary
