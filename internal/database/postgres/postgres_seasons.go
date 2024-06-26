@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"github.com/Leagueify/api/internal/model"
+	"github.com/Leagueify/api/internal/util"
 )
 
 func (p Postgres) CreateSeason(season model.Season) error {
@@ -20,4 +21,27 @@ func (p Postgres) CreateSeason(season model.Season) error {
 		return err
 	}
 	return nil
+}
+
+func (p Postgres) ListSeasons() ([]model.SeasonList, error) {
+	seasons := []model.SeasonList{}
+
+	rows, err := p.DB.Query(`SELECT id, name FROM seasons`)
+	if err != nil {
+		return seasons, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var season model.SeasonList
+		if err := rows.Scan(
+			&season.ID,
+			&season.Name,
+		); err != nil {
+			return seasons, err
+		}
+		season.ID = util.ReturnSignedToken(season.ID)
+		seasons = append(seasons, season)
+	}
+
+	return seasons, nil
 }

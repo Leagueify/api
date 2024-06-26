@@ -140,3 +140,56 @@ func TestCreateSeason(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	}
 }
+
+func TestListSeasons(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
+	// create mock db
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error: '%s' was not expected creating mock DB", err)
+	}
+	db := postgres.Postgres{DB: mockDB}
+	testCases := []struct {
+		Description        string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+	}{
+		{
+			Description: "Return Seasons",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT id, name FROM seasons").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow("1", "2024-2025"))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "No Rows Returned",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT id, name FROM seasons").WillReturnRows(sqlmock.NewRows([]string{"id", "name"}))
+			},
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+	}
+	for _, test := range testCases {
+		// utilize mock db if required
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// initialize echo
+		e := echo.New()
+		api := API{DB: db}
+		req := httptest.NewRequest(http.MethodGet, "/api/seasons", nil)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		// perform request
+		if assert.NoError(t, api.listSeasons(c)) {
+			// assert status code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+			// validate response body
+			assert.NoError(t, err)
+		}
+		// assert all expectations were met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}

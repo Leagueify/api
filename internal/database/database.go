@@ -42,6 +42,7 @@ type Database interface {
 	SetRegistration(tx *sql.Tx, playerIDs pq.StringArray, registrationID string) error
 	// season functions
 	CreateSeason(season model.Season) error
+	ListSeasons() ([]model.SeasonList, error)
 	// sport functions
 	GetSports() ([]model.Sport, error)
 	GetSportByID(sportID string) (model.Sport, error)

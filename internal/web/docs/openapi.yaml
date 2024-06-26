@@ -548,6 +548,68 @@ paths:
           $ref: "#/components/errors/unauthorized"
   
   /seasons:
+    get:
+      tags:
+        - Seasons
+      summary: List all league seasons
+      description: '
+        This endpoint will return the ID of all league seasons.
+        '
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Returns list of seasons
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  seasons:
+                    description: List of Seasons
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: Season ID
+                          type: string
+                        name:
+                          description: Season Name
+                          type: string
+              examples:
+                responseListSeasons:
+                  summary: List of Seasons
+                  value: [
+                    {
+                      "ID": "3MJJ7MVYT1",
+                      "Name": "2022-2023"
+                    },
+                    {
+                      "ID": "ZXD2JKW2NZ",
+                      "Name": "2023-2024"
+                    },
+                    {
+                      "ID": "RARNP1A7CZ",
+                      "Name": "2024-2025"
+                    }
+                  ]
+        404:
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: Status Message
+                    type: string
+              examples:
+                SeasonsNotFound:
+                  summary: Error Status
+                  value: {
+                    "status": "not found"
+                  }
     post:
       tags:
         - Seasons

@@ -11,6 +11,7 @@ import (
 
 func (api *API) Seasons(e *echo.Group) {
 	e.POST("/seasons", api.requiresAdmin(api.createSeason))
+	e.GET("/seasons", api.listSeasons)
 }
 
 func (api *API) createSeason(c echo.Context) error {
@@ -71,4 +72,20 @@ func (api *API) createSeason(c echo.Context) error {
 			"status": "successful",
 		},
 	)
+}
+
+func (api *API) listSeasons(c echo.Context) error {
+	seasons, err := api.DB.ListSeasons()
+	if err != nil {
+		return util.SendStatus(
+			http.StatusInternalServerError, c,
+			util.HandleError(err),
+		)
+	}
+
+	if len(seasons) == 0 {
+		return util.SendStatus(http.StatusNotFound, c, "")
+	}
+
+	return c.JSON(http.StatusOK, seasons)
 }
