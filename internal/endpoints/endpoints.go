@@ -85,5 +85,6 @@ func Routes(e *echo.Echo) {
 	api.Leagues(routes)
 	api.Players(routes)
 	api.Positions(routes)
+	api.Seasons(routes)
 	api.Sports(routes)
 }

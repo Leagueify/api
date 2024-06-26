@@ -547,6 +547,65 @@ paths:
         401:
           $ref: "#/components/errors/unauthorized"
   
+  /seasons:
+    post:
+      tags:
+        - Seasons
+      summary: Create a league season
+      description: '
+        This endpoint will create a new season for the league.
+        '
+      produces:
+        - application/json
+      security:
+        - apiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Season Name
+                  type: string
+                  example: 2024-2025
+                startDate:
+                  description: Date the Season Starts
+                  type: string
+                  example: 2024-03-01
+                endDate:
+                  description: Date the Season Ends
+                  type: string
+                  example: 2024-05-01
+                registrationOpens:
+                  description: Date the League Registration Opens
+                  type: string
+                  example: 2024-01-01
+                registrationCloses:
+                  description: Date the League Registration Closes
+                  type: string
+                  example: 2024-03-01
+              required:
+                - name
+                - startDate
+                - endDate
+                - registrationOpens
+                - registrationCloses
+      responses:
+        201:
+          description: Season created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/successful/schema"
+              examples:
+                seasonCreated:
+                  $ref: "#/components/successful/example"
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
+
   /sports:
     get:
       tags:
