@@ -257,3 +257,162 @@ func TestGetSeason(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	}
 }
+
+func TestUpdateSeason(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
+	// create mock db
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error: '%s' was not expected creating mock DB", err)
+	}
+	db := postgres.Postgres{DB: mockDB}
+	testCases := []struct {
+		Description        string
+		ID                 string
+		RequestBody        string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+		ExpectedContent    string
+	}{
+		{
+			Description:        "Invalid JSON Payload",
+			ID:                 "1RFWY1T1B~",
+			RequestBody:        `{`,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"invalid json payload"`,
+		},
+		{
+			Description:        "Invalid Season ID",
+			ID:                 "1RFWY1T1B1",
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+		{
+			Description: "Valid Season ID no Season with ID",
+			ID:          "BJ7Q4NVRNQ",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationsCloses"}))
+			},
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+		{
+			Description: "Invalid Date Ranges: Season Dates",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"endDate":"2024-01-01"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+			},
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"incorrect date range\(s\): \[StartDate-EndDate\]"`,
+		},
+		{
+			Description: "Invalid Date Ranges: Registration Dates",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"registrationCloses":"2023-12-31"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+			},
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"incorrect date range\(s\): \[RegistrationOpens-RegistrationCloses\]"`,
+		},
+		{
+			Description: "Invalid Date Ranges",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"name":"Test Season","startDate":"2024-03-01","endDate":"2024-01-01","registrationOpens":"2024-01-01","registrationCloses":"2023-12-31"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+			},
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedContent:    `"detail":"incorrect date range\(s\): \[StartDate-EndDate RegistrationOpens-RegistrationCloses\]"`,
+		},
+		{
+			Description: "Update Name",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"name":"Test Season"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+				mock.ExpectExec("UPDATE seasons SET name = (.+), start_date = (.+), end_date = (.+), registration_opens = (.+), registration_closes = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "Update StartDate",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"start_date":"2024-03-02"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+				mock.ExpectExec("UPDATE seasons SET name = (.+), start_date = (.+), end_date = (.+), registration_opens = (.+), registration_closes = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "Update EndDate",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"end_date":"2024-05-02"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+				mock.ExpectExec("UPDATE seasons SET name = (.+), start_date = (.+), end_date = (.+), registration_opens = (.+), registration_closes = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "Update RegistrationOpens",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"registration_opens":"2024-01-02"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+				mock.ExpectExec("UPDATE seasons SET name = (.+), start_date = (.+), end_date = (.+), registration_opens = (.+), registration_closes = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "Update RegistrationCloses",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"registration_closes":"2024-03-02"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+				mock.ExpectExec("UPDATE seasons SET name = (.+), start_date = (.+), end_date = (.+), registration_opens = (.+), registration_closes = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+		{
+			Description: "Update Entire Season",
+			ID:          "BJ7Q4NVRNQ",
+			RequestBody: `{"name":"Test Season","start_date":"2024-03-02","end_date":"2024-05-02","registration_opens":"2024-01-02","registration_closes":"2024-03-02"}`,
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+				mock.ExpectExec("UPDATE seasons SET name = (.+), start_date = (.+), end_date = (.+), registration_opens = (.+), registration_closes = (.+) WHERE id = (.+)$").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+	}
+	for _, test := range testCases {
+		// utilize mock db if required
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// initialize echo
+		e := echo.New()
+		api := API{DB: db}
+		reqBody := []byte(test.RequestBody)
+		req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/api/seasons/%s", test.ID), bytes.NewBuffer(reqBody))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetParamNames("id")
+		c.SetParamValues(test.ID)
+		// perform request
+		if assert.NoError(t, api.updateSeason(c)) {
+			// assert status code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+			// validate request body
+			match, err := regexp.MatchString(test.ExpectedContent, rec.Body.String())
+			assert.NoError(t, err)
+			assert.True(t, match, fmt.Sprintf("%v: Expected %v, but received %v",
+				test.Description, test.ExpectedContent, rec.Body.String(),
+			))
+		}
+		// assert all expectations where met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}

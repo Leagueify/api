@@ -44,6 +44,7 @@ type Database interface {
 	CreateSeason(season model.Season) error
 	GetSeason(seasonID string) (model.Season, error)
 	ListSeasons() ([]model.SeasonList, error)
+	UpdateSeason(season model.Season) error
 	// sport functions
 	GetSports() ([]model.Sport, error)
 	GetSportByID(sportID string) (model.Sport, error)

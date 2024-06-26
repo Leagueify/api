@@ -731,8 +731,6 @@ paths:
           $ref: "#/components/errors/unauthorized"
         404:
           $ref: "#/components/errors/notfound"
-
-
     patch:
       tags:
         - Seasons
@@ -740,6 +738,56 @@ paths:
       description: '
         This endpoint will update the specified league season.
         '
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the season to update
+          required: true
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: Season Name
+                  type: string
+                  example: 2024-2025
+                startDate:
+                  description: Date the Season Starts
+                  type: string
+                  example: 2024-03-01
+                endDate:
+                  description: Date the Season Ends
+                  type: string
+                  example: 2024-05-01
+                registrationOpens:
+                  description: Date the League Registration Opens
+                  type: string
+                  example: 2024-01-01
+                registrationCloses:
+                  description: Date the League Registration Closes
+                  type: string
+                  example: 2024-03-01
+      responses:
+        200:
+          description:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: Status Response
+                    type: string
+                    example: successful
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
 
   /sports:
     get:

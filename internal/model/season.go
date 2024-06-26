@@ -14,4 +14,13 @@ type (
 		ID   string
 		Name string
 	}
+
+	SeasonUpdate struct {
+		ID                 string
+		Name               string
+		StartDate          string
+		EndDate            string
+		RegistrationOpens  string
+		RegistrationCloses string
+	}
 )

@@ -38,6 +38,7 @@ func (p Postgres) GetSeason(seasonID string) (model.Season, error) {
 	); err != nil {
 		return season, err
 	}
+	season.ID = util.ReturnSignedToken(season.ID)
 
 	return season, nil
 }
@@ -63,4 +64,20 @@ func (p Postgres) ListSeasons() ([]model.SeasonList, error) {
 	}
 
 	return seasons, nil
+}
+
+func (p Postgres) UpdateSeason(season model.Season) error {
+	if _, err := p.DB.Exec(`
+		UPDATE seasons
+		SET name = $1, start_date = $2, end_date = $3,
+			registration_opens = $4, registration_closes = $5
+		WHERE id = $6
+	`,
+		season.Name, season.StartDate, season.EndDate,
+		season.RegistrationOpens, season.RegistrationCloses,
+		season.ID[:len(season.ID)-1],
+	); err != nil {
+		return err
+	}
+	return nil
 }
