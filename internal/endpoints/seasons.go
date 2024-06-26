@@ -12,6 +12,7 @@ import (
 func (api *API) Seasons(e *echo.Group) {
 	e.POST("/seasons", api.requiresAdmin(api.createSeason))
 	e.GET("/seasons", api.listSeasons)
+	e.GET("/seasons/:id", api.getSeason)
 }
 
 func (api *API) createSeason(c echo.Context) error {
@@ -72,6 +73,20 @@ func (api *API) createSeason(c echo.Context) error {
 			"status": "successful",
 		},
 	)
+}
+
+func (api *API) getSeason(c echo.Context) error {
+	seasonID := c.Param("id")
+	if !util.VerifyToken(seasonID) {
+		return util.SendStatus(http.StatusNotFound, c, "")
+	}
+	// search for season
+	season, err := api.DB.GetSeason(seasonID)
+	if err != nil {
+		return util.SendStatus(http.StatusNotFound, c, "")
+	}
+	season.ID = util.ReturnSignedToken(season.ID)
+	return c.JSON(http.StatusOK, season)
 }
 
 func (api *API) listSeasons(c echo.Context) error {

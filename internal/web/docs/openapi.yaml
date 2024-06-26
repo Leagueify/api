@@ -668,6 +668,79 @@ paths:
         401:
           $ref: "#/components/errors/unauthorized"
 
+  /seasons/{id}:
+    get:
+      tags:
+        - Seasons
+      summary: Return season details
+      description: '
+        This endpoint will return season details for specified season.
+        '
+      parameters:
+        - name: id
+          in: path
+          description: ID of the season to retrieve
+          required: true
+          type: string
+      responses:
+        200:
+          description: Season Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: Season ID
+                    type: string
+                    example: RARNP1A7CZ
+                  name:
+                    description: Season Name
+                    type: string
+                    example: 2024-2025
+                  startDate:
+                    description: Date the Season Starts
+                    type: string
+                    example: 2024-03-01
+                  endDate:
+                    description: Date the Season Ends
+                    type: string
+                    example: 2024-05-01
+                  registrationOpens:
+                    description: Date the League Registration Opens
+                    type: string
+                    example: 2024-01-01
+                  registrationCloses:
+                    description: Date the League Registration Closes
+                    type: string
+                    example: 2024-03-01
+              examples:
+                default:
+                  summary: Response creating position(s)
+                  value: {
+                      "id": "RARNP1A7CZ",
+                      "name": "2024-2025",
+                      "startDate": "2024-03-01",
+                      "endDate": "2024-05-01",
+                      "registrationOpens": "2024-01-01",
+                      "registrationCloses": "2024-03-01"
+                    }
+        400:
+          $ref: "#/components/errors/badRequest"
+        401:
+          $ref: "#/components/errors/unauthorized"
+        404:
+          $ref: "#/components/errors/notfound"
+
+
+    patch:
+      tags:
+        - Seasons
+      summary: Update specified season
+      description: '
+        This endpoint will update the specified league season.
+        '
+
   /sports:
     get:
       tags:
@@ -749,6 +822,23 @@ components:
               value: {
                 "status": "unauthorized"
                 }
+    notfound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                description: Resource requested not found
+                type: string
+          examples:
+            default:
+              summary: Resource not found
+              value: {
+                "status": "not found"
+                }
+
   players:
     schema:
       type: object

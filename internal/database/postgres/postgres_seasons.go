@@ -23,6 +23,25 @@ func (p Postgres) CreateSeason(season model.Season) error {
 	return nil
 }
 
+func (p Postgres) GetSeason(seasonID string) (model.Season, error) {
+	season := model.Season{}
+
+	if err := p.DB.QueryRow(`
+		SELECT * FROM seasons WHERE id = $1
+	`, seasonID[:len(seasonID)-1]).Scan(
+		&season.ID,
+		&season.Name,
+		&season.StartDate,
+		&season.EndDate,
+		&season.RegistrationOpens,
+		&season.RegistrationCloses,
+	); err != nil {
+		return season, err
+	}
+
+	return season, nil
+}
+
 func (p Postgres) ListSeasons() ([]model.SeasonList, error) {
 	seasons := []model.SeasonList{}
 

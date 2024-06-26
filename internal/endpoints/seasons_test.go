@@ -193,3 +193,67 @@ func TestListSeasons(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	}
 }
+
+func TestGetSeason(t *testing.T) {
+	// run test in parallel
+	t.Parallel()
+	// create mock db
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error: '%s' was not expected creating mock DB", err)
+	}
+	db := postgres.Postgres{DB: mockDB}
+	testCases := []struct {
+		Description        string
+		ID                 string
+		Mock               func(mock sqlmock.Sqlmock)
+		ExpectedStatusCode int
+	}{
+		{
+			Description:        "Invalid Season ID",
+			ID:                 "ABC1234",
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+		{
+			Description: "Valid Season ID no Season with ID",
+			ID:          "BJ7Q4NVRNQ",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationsCloses"}))
+			},
+			ExpectedStatusCode: http.StatusNotFound,
+		},
+		{
+			Description: "Valid Season ID Found",
+			ID:          "BJ7Q4NVRNQ",
+			Mock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT \\* FROM seasons WHERE id = (.+)").WillReturnRows(sqlmock.NewRows([]string{"id", "name", "startDate", "endDate", "registrationOpens", "registrationCloses"}).AddRow("BJ7Q4NVRNQ", "2024-2025", "2024-03-01", "2024-05-01", "2024-01-01", "2024-03-01"))
+			},
+			ExpectedStatusCode: http.StatusOK,
+		},
+	}
+	for _, test := range testCases {
+		// utilize mock db if required
+		if test.Mock != nil {
+			test.Mock(mock)
+		}
+		// initialize echo
+		e := echo.New()
+		api := API{DB: db}
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/seasons/%s", test.ID), nil)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetParamNames("id")
+		c.SetParamValues(test.ID)
+
+		// perform request
+		if assert.NoError(t, api.getSeason(c)) {
+			// assert status code
+			assert.Equal(t, test.ExpectedStatusCode, rec.Code)
+			// validate response body
+			assert.NoError(t, err)
+		}
+		// assert all expectations were met
+		assert.NoError(t, mock.ExpectationsWereMet())
+	}
+}
