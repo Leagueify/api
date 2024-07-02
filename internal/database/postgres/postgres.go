@@ -139,6 +139,20 @@ func (p Postgres) InitializeDatabase() error {
 		return err
 	}
 
+	// create seasons table
+	if _, err = tx.Exec(`
+		CREATE TABLE IF NOT EXISTS seasons (
+			id TEXT PRIMARY KEY,
+			name TEXT UNIQUE NOT NULL,
+			start_date TEXT NOT NULL,
+			end_date TEXT NOT NULL,
+			registration_opens TEXT NOT NULL,
+			registration_closes TEXT NOT NULL
+		)
+	`); err != nil {
+		return err
+	}
+
 	// create sports table
 	if _, err = tx.Exec(`
 		CREATE TABLE IF NOT EXISTS sports (
